@@ -464,7 +464,21 @@ const camel = s => s.replace(/_([a-z])/g, (_,c)=>c.toUpperCase());
 const toRow = obj => Object.fromEntries(Object.entries(obj).map(([k,v])=>[snake(k), v]));
 const fromRow = row => Object.fromEntries(Object.entries(row).map(([k,v])=>[camel(k), v]));
 
+/* Connection details for the hosted deployment. Filled in at deploy time so a
+   coach never has to paste anything: they open the link, get an email, click
+   it, and they are in.
+
+   The anon key is designed to be public -- it identifies the project, it does
+   not grant access. Access is decided by the `coaches` table and enforced by
+   Postgres row-level security, so a stranger holding this key still reads zero
+   rows. Never put the service_role / secret key here; that one does bypass it. */
+const BAKED_CONFIG = {
+  url: 'https://xihwikmvohkyochthfdl.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpaHdpa212b2hreW9jaHRoZmRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwODQzMjIsImV4cCI6MjEwNDY2MDMyMn0.Mv-m8iX2TxTuXizBbqrZCKnJWi4AwK7TtpFoYtexWsE',
+};
+
 function sbConfig(){
+  if(BAKED_CONFIG.url && BAKED_CONFIG.anonKey) return BAKED_CONFIG;
   try{ return JSON.parse(localStorage.getItem(SB_KEY)) || null; }catch(e){ return null; }
 }
 function sbSession(){
@@ -772,6 +786,12 @@ async function boot(){
       render();
       return;
     }catch(e){
+      if(BAKED_CONFIG.url){
+        S.gate = 'signin';
+        S.gateError = 'Could not reach the database just now. Check your connection and try again.';
+        render();
+        return;
+      }
       toast('Could not reach the database -- working on this device only', true);
       setSync();
       return;
@@ -2916,6 +2936,7 @@ document.addEventListener('click', async e=>{
       break;
     }
     case 'sb-skip':
+      if(BAKED_CONFIG.url) break;
       S.gate = null; S.gateError = null;
       toast('Working on this device only -- nothing will sync');
       render();
