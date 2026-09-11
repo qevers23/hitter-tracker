@@ -745,15 +745,18 @@ async function boot(){
   const onArtifact = typeof claude !== 'undefined' && !!claude.use;
 
   if(!onArtifact){
-    if(!sbConfig()){ S.gate = 'setup'; render(); return; }
-    // A magic link lands here with the session in the fragment.
+    /* Take the session out of the URL FIRST. A sign-in link can be opened on a
+       device that has never been set up -- a phone, most likely -- and the token
+       is single use. Banking it before the setup gate means the link is not
+       burned for nothing: finish the setup and you are already signed in. */
     const handoff = consumeAuthHash();
     if(handoff && handoff.error){
-      S.gate = 'signin';
+      S.gate = sbConfig() ? 'signin' : 'setup';
       S.gateError = handoff.error + ' -- request a new sign-in email.';
       render();
       return;
     }
+    if(!sbConfig()){ S.gate = 'setup'; render(); return; }
     if(!sbSession()){ S.gate = 'signin'; render(); return; }
     try{
       if(await supabaseStore.init()){
@@ -1199,6 +1202,9 @@ function setupGate(){
         <label class="field"><span>Anon public key <span class="mut">(newer projects call it "publishable")</span></span>
           <input type="text" id="sb-key" placeholder="eyJhbGciOi...  or  sb_publishable_..."></label>
       </div>
+      ${sbSession()?`<div class="warnbar" style="margin-top:12px">
+        <b>Your sign-in worked.</b> This device just needs the two values above, then you are in --
+        you will not have to sign in again.</div>`:''}
       ${S.gateError?`<div class="warnbar" style="margin-top:12px">${esc(S.gateError)}</div>`:''}
       <div class="row" style="margin-top:14px">
         <button class="btn primary" data-act="sb-save">Connect</button>
@@ -2888,6 +2894,23 @@ document.addEventListener('click', async e=>{
       try{ localStorage.setItem(SB_KEY, JSON.stringify({url, anonKey:key})); }
       catch(err){ S.gateError = 'This browser is blocking storage, so the connection cannot be saved.'; render(); break; }
       S.gateError = null;
+      /* A sign-in link opened on this device before setup leaves a banked
+         session. Use it rather than making them ask for a second email. */
+      if(sbSession()){
+        try{
+          if(await supabaseStore.init()){
+            store = supabaseStore;
+            S.gate = null;
+            await adoptRemote();
+            toast('Connected -- you were already signed in');
+            break;
+          }
+          try{ localStorage.removeItem(SB_SESSION); }catch(err){}
+          S.gateError = 'Connected, but that sign-in is not on the coaches list. Sign in again.';
+        }catch(err){
+          S.gateError = 'Saved, but could not reach that project. Check the URL and key.';
+        }
+      }
       S.gate = 'signin';
       render();
       break;
