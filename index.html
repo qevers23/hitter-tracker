@@ -491,15 +491,57 @@ const supabaseStore = {
   async init(){
     this.cfg = sbConfig();
     this.session = sbSession();
-    if(!this.cfg || !this.session) return false;
+    if(!this.cfg || !this.session){ this.reason = 'no-session'; return false; }
     /* Prove BOTH that the token is valid and that this email is on the coaches
        list. A 200 is not enough: row-level security hides rows rather than
        refusing the request, so someone who signed up but was never added comes
-       back as a perfectly successful EMPTY result. The row count is the check. */
-    const r = await this.req('GET', 'coaches?select=email&limit=1');
-    if(!r.ok) return false;
+       back as a perfectly successful EMPTY result. The row count is the check.
+
+       The two failures need different messages, though -- telling someone they
+       are not on a list they ARE on sends them to fix the wrong thing. */
+    let r;
+    try{ r = await this.req('GET', 'coaches?select=email&limit=1'); }
+    catch(e){ this.reason = 'unreachable'; return false; }
+
+    if(r.status === 401 || r.status === 403){ this.reason = 'bad-token'; return false; }
+    if(!r.ok){
+      this.reason = 'server';
+      this.detail = (await r.text().catch(()=>'')).slice(0, 200);
+      return false;
+    }
     const rows = await r.json().catch(()=>[]);
-    return Array.isArray(rows) && rows.length > 0;
+    if(Array.isArray(rows) && rows.length > 0){ this.reason = null; return true; }
+    this.reason = 'not-coach';
+    return false;
+  },
+
+  // The email this device is actually signed in as, read from the token itself.
+  signedInAs(){
+    try{
+      const t = this.session && this.session.access_token;
+      if(!t || !t.includes('.')) return null;
+      const c = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      return c.email || null;
+    }catch(e){ return null; }
+  },
+
+  // A message that names the actual problem rather than guessing at one.
+  why(){
+    const who = this.signedInAs();
+    switch(this.reason){
+      case 'not-coach':
+        return (who ? 'Signed in as ' + who + ', but that address' : 'That address')
+          + ' is not on the coaches list. It has to match exactly -- add it in Supabase, then sign in again.';
+      case 'bad-token':
+        return 'That sign-in was rejected or has expired. Sign in again.';
+      case 'unreachable':
+        return 'Could not reach the database. Check your connection and try again.';
+      case 'server':
+        return 'The database refused the request' + (this.detail ? ': ' + this.detail : '.')
+          + ' This usually means the schema has not been run, or a policy is wrong.';
+      default:
+        return 'Could not sign in.';
+    }
   },
 
   async req(method, path, body){
@@ -817,10 +859,10 @@ async function boot(){
         setSync();
         return;
       }
-      // Signed in but rejected: expired token, or not on the coaches list.
+      // Say which of the two it actually was, and keep a session that is fine.
       S.gate = 'signin';
-      S.gateError = 'That sign-in is no longer valid, or your email is not on the coaches list yet.';
-      try{ localStorage.removeItem(SB_SESSION); }catch(e){}
+      S.gateError = supabaseStore.why();
+      if(supabaseStore.reason === 'bad-token'){ try{ localStorage.removeItem(SB_SESSION); }catch(e){} }
       render();
       return;
     }catch(e){
@@ -3002,8 +3044,8 @@ document.addEventListener('click', async e=>{
             toast('Connected -- you were already signed in');
             break;
           }
-          try{ localStorage.removeItem(SB_SESSION); }catch(err){}
-          S.gateError = 'Connected, but that sign-in is not on the coaches list. Sign in again.';
+          S.gateError = supabaseStore.why();
+          if(supabaseStore.reason === 'bad-token'){ try{ localStorage.removeItem(SB_SESSION); }catch(err){} }
         }catch(err){
           S.gateError = 'Saved, but could not reach that project. Check the URL and key.';
         }
@@ -3042,9 +3084,10 @@ document.addEventListener('click', async e=>{
           await adoptRemote();
           toast('Signed in');
         }else{
-          localStorage.removeItem(SB_SESSION);
-          S.gateError = 'Signed in, but ' + email + ' is not on the coaches list yet. '
-            + 'Whoever set this up needs to add it.';
+          S.gateError = supabaseStore.why();
+          // Only a genuinely rejected token is worth throwing away. A missing
+          // allowlist row is fixed in Supabase, and the session stays valid.
+          if(supabaseStore.reason === 'bad-token'){ try{ localStorage.removeItem(SB_SESSION); }catch(e){} }
         }
       }catch(err){ S.gateError = String(err.message); }
       render();
