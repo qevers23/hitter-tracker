@@ -565,6 +565,44 @@ const supabaseStore = {
 function siteRedirect(){
   return location.origin + location.pathname;
 }
+/* Password sign-in. No email is sent, so nothing is rate limited and a coach is
+   never stuck waiting on an inbox. Being signed in is still not the same as
+   being allowed in: the coaches table decides that, and row-level security
+   enforces it, so someone who creates a password but is not on the list reads
+   exactly nothing. */
+async function sbPassword(url, anonKey, email, password, mode){
+  const base = url.replace(/\/$/,'');
+  const path = mode==='signup' ? '/auth/v1/signup' : '/auth/v1/token?grant_type=password';
+  const res = await fetch(base + path, {
+    method:'POST',
+    headers:{apikey:anonKey, 'Content-Type':'application/json'},
+    body: JSON.stringify({email, password}),
+  });
+  const body = await res.json().catch(()=>({}));
+
+  if(!res.ok || (!body.access_token && mode!=='signup')){
+    const raw = body.msg || body.error_description || body.message || body.error || '';
+    throw new Error(friendlyAuthError(raw, mode));
+  }
+  // Signup returns a session only when Supabase is not holding out for an
+  // email confirmation. If it is, say so plainly -- that setting is the cause.
+  if(!body.access_token){
+    throw new Error('Account created, but Supabase is set to require email confirmation. '
+      + 'Turn off Authentication -> Sign In / Providers -> Email -> Confirm email, then sign in.');
+  }
+  return body;
+}
+
+function friendlyAuthError(raw, mode){
+  const t = String(raw).toLowerCase();
+  if(t.includes('invalid login credentials')) return 'That email and password do not match. Check both, or create a password if this is your first time.';
+  if(t.includes('already registered') || t.includes('already been registered')) return 'That email already has a password. Use Sign in instead.';
+  if(t.includes('email not confirmed')) return 'Supabase is waiting on an email confirmation for this account. Turn off Confirm email in Authentication settings, then sign in.';
+  if(t.includes('password should be')) return 'That password is too short -- use at least 8 characters.';
+  if(t.includes('rate limit')) return 'Too many attempts just now. Wait a minute and try again.';
+  return raw || (mode==='signup' ? 'Could not create that account.' : 'Could not sign in.');
+}
+
 async function sbSendLink(url, anonKey, email, redirectTo){
   const res = await fetch(
     url.replace(/\/$/,'') + '/auth/v1/otp?redirect_to=' + encodeURIComponent(redirectTo),
@@ -1238,8 +1276,47 @@ function setupGate(){
   </div>`;
 }
 
-/* ---------- sign in ---------- */
+/* ---------- sign in ----------
+   Email and password, because the alternative sends mail and mail is rate
+   limited exactly when you are trying to get a staff set up. */
 function signinGate(){
+  const st = S.signin || (S.signin = {email:'', mode:'signin'});
+  const creating = st.mode === 'signup';
+  return `<div class="col" style="max-width:460px;margin:0 auto">
+    <div class="panel">
+      <header><h2>${creating ? 'Create your password' : 'Coach sign-in'}</h2></header>
+      <p class="note" style="margin:0 0 14px">${creating
+        ? 'First time on this tracker? Pick a password. Your email has to be on the coaches list already -- ask whoever set this up if you are not sure.'
+        : 'Signing in keeps you signed in on this device. You will not have to do it again.'}</p>
+
+      <div class="col" style="gap:10px">
+        <label class="field"><span>Email</span>
+          <input type="email" id="si-email" autocomplete="username" value="${esc(st.email)}"
+            placeholder="you@mountmarty.edu"></label>
+        <label class="field"><span>Password</span>
+          <input type="password" id="si-pass"
+            autocomplete="${creating ? 'new-password' : 'current-password'}"
+            placeholder="${creating ? 'at least 8 characters' : ''}"></label>
+      </div>
+
+      ${S.gateError?`<div class="warnbar" style="margin-top:12px">${esc(S.gateError)}</div>`:''}
+
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" data-act="si-pass-go" data-mode="${creating?'signup':'signin'}">
+          ${creating ? 'Create and sign in' : 'Sign in'}</button>
+        <button class="btn ghost" data-act="si-mode" data-v="${creating?'signin':'signup'}">
+          ${creating ? 'I already have a password' : 'First time here'}</button>
+      </div>
+
+      <p class="note" style="margin:14px 0 0">Only emails on the coaches list can see any data.
+        Creating a password does not grant access on its own.</p>
+    </div>
+  </div>`;
+}
+
+/* Kept for links already sent, and for anyone who would rather not hold a
+   password. Not linked from the sign-in screen. */
+function linkGate(){
   const st = S.signin || (S.signin = {email:'', sent:false, code:''});
   return `<div class="col" style="max-width:520px;margin:0 auto">
     <div class="panel">
@@ -2941,37 +3018,33 @@ document.addEventListener('click', async e=>{
       toast('Working on this device only -- nothing will sync');
       render();
       break;
-    case 'si-send': {
-      const cfg = sbConfig();
-      const email = ($('#si-email')?.value || '').trim();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ S.gateError = 'Enter a valid email address.'; render(); break; }
-      el.disabled = true;
-      try{
-        await sbSendLink(cfg.url, cfg.anonKey, email, siteRedirect());
-        S.signin = {email, sent:true};
-        S.gateError = null;
-      }catch(err){ S.gateError = String(err.message); }
+    case 'si-mode':
+      S.signin = {email: ($('#si-email')?.value || S.signin?.email || '').trim(), mode: d.v};
+      S.gateError = null;
       render();
       break;
-    }
-    case 'si-verify': {
+    case 'si-pass-go': {
       const cfg = sbConfig();
-      const code = ($('#si-code')?.value || '').trim();
-      if(!code){ S.gateError = 'Enter the code from your email.'; render(); break; }
+      const email = ($('#si-email')?.value || '').trim();
+      const pass  = $('#si-pass')?.value || '';
+      if(!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)){ S.gateError = 'Enter a valid email address.'; render(); break; }
+      if(pass.length < 8){ S.gateError = 'Use a password of at least 8 characters.'; render(); break; }
       el.disabled = true;
+      el.textContent = d.mode==='signup' ? 'Creating...' : 'Signing in...';
       try{
-        const session = await sbVerifyCode(cfg.url, cfg.anonKey, S.signin.email, code);
+        const session = await sbPassword(cfg.url, cfg.anonKey, email, pass, d.mode);
         localStorage.setItem(SB_SESSION, JSON.stringify(session));
         S.gateError = null;
-        S.signin = null;
         if(await supabaseStore.init()){
           store = supabaseStore;
+          S.signin = null;
           S.gate = null;
           await adoptRemote();
           toast('Signed in');
         }else{
           localStorage.removeItem(SB_SESSION);
-          S.gateError = 'Signed in, but your email is not on the coaches list. Ask whoever set this up to add it.';
+          S.gateError = 'Signed in, but ' + email + ' is not on the coaches list yet. '
+            + 'Whoever set this up needs to add it.';
         }
       }catch(err){ S.gateError = String(err.message); }
       render();
