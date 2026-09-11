@@ -1,0 +1,3192 @@
+<title>Mount Marty Hitter Tracker</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* ============================================================
+   Mount Marty Baseball -- Hitter Zone Tracker
+   Single committed dark theme. Palette sampled from the team logo.
+   ============================================================ */
+:root{
+  --navy-900:#0F1E3D; --navy-850:#132B52; --navy-800:#16274C; --navy-750:#1B2F58;
+  --navy-700:#22355F; --navy-600:#2E4275;
+  --gold-500:#F9A81A; --gold-300:#FBC55E; --gold-700:#C8850E;
+  --white:#FFFFFF; --slate-100:#E6EAF2; --slate-300:#A8B3C7; --slate-500:#6E7C99;
+  --good:#4FBF8B; --warn:#F9A81A; --bad:#E0614B;
+  --r:4px; --r-lg:8px;
+  --f-disp:'Archivo','Arial Narrow',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--navy-900);color:var(--slate-100);
+  font-family:var(--f-body);font-size:14px;line-height:1.45;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4{font-family:var(--f-disp);font-weight:800;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:20px;text-transform:uppercase;letter-spacing:.04em}
+h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-300)}
+h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate-500)}
+.eyebrow{font-family:var(--f-disp);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--slate-500)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.mut{color:var(--slate-500)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;text-align:inherit}
+input,select{font:inherit;color:var(--white);background:var(--navy-900);border:1px solid var(--navy-700);border-radius:var(--r);padding:7px 9px}
+input:focus-visible,select:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold-500);outline-offset:2px}
+a{color:var(--gold-300)}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  padding-block:14px;border-bottom:1px solid var(--navy-700);margin-bottom:20px;
+}
+.logo{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.logo svg{display:block}
+.logo .wm{font-family:var(--f-disp);font-weight:800;line-height:1;text-transform:uppercase}
+.logo .wm b{display:block;font-size:17px;letter-spacing:.02em;color:var(--white)}
+.logo .wm i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.22em;color:var(--gold-500);font-weight:700}
+nav.tabs{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+nav.tabs button{
+  font-family:var(--f-disp);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;
+  padding:8px 13px;border-radius:var(--r);color:var(--slate-300);
+}
+nav.tabs button:hover{color:var(--white);background:var(--navy-800)}
+nav.tabs button[aria-current="page"]{background:var(--gold-500);color:var(--navy-900)}
+#sync{font-size:11px;font-family:var(--f-mono);color:var(--slate-500);white-space:nowrap}
+#sync.on{color:var(--good)} #sync.off{color:var(--warn)} #sync.err{color:var(--bad)}
+
+/* ---------- primitives ---------- */
+.panel{background:var(--navy-800);border:1px solid var(--navy-700);border-radius:var(--r-lg);padding:16px}
+.panel>header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.panel>header .sub{font-size:12px;color:var(--slate-500);margin-left:auto;font-family:var(--f-mono)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.tight{gap:6px}
+.col{display:flex;flex-direction:column;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;align-items:start}
+.btn{
+  font-family:var(--f-disp);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em;
+  padding:9px 16px;border-radius:var(--r);background:var(--navy-700);color:var(--white);
+  border:1px solid var(--navy-600);transition:background .12s;text-align:center;
+}
+.btn:hover{background:var(--navy-600)}
+.btn.primary{background:var(--gold-500);color:var(--navy-900);border-color:var(--gold-500)}
+.btn.primary:hover{background:var(--gold-300)}
+.btn.ghost{background:none;border-color:var(--navy-600);color:var(--slate-300)}
+.btn.ghost:hover{color:var(--white);border-color:var(--slate-500)}
+.btn.danger{background:none;border-color:var(--bad);color:var(--bad)}
+.btn.danger:hover{background:var(--bad);color:var(--navy-900)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{padding:6px 11px;font-size:11.5px}
+.seg{display:inline-flex;border:1px solid var(--navy-600);border-radius:var(--r);overflow:hidden;flex-wrap:wrap}
+.seg button{
+  font-family:var(--f-disp);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;
+  padding:7px 12px;color:var(--slate-300);
+}
+.seg button+button{border-left:1px solid var(--navy-600)}
+.seg button:hover{background:var(--navy-700);color:var(--white)}
+.seg button[aria-pressed="true"]{background:var(--gold-500);color:var(--navy-900)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--slate-500);font-weight:600}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:2px 7px;border-radius:99px;background:var(--navy-700);color:var(--slate-300)}
+.pill.gold{background:var(--gold-500);color:var(--navy-900);font-weight:600}
+.pill.type-scrimmage{background:var(--navy-600);color:var(--gold-300)}
+.pill.live{background:var(--good);color:var(--navy-900);font-weight:600}
+.empty{padding:28px 18px;text-align:center;color:var(--slate-500);font-size:13px;border:1px dashed var(--navy-700);border-radius:var(--r-lg)}
+.warnbar{background:var(--navy-750);border-left:3px solid var(--gold-500);padding:9px 12px;border-radius:var(--r);font-size:12.5px;color:var(--slate-100)}
+.note{font-size:12px;color:var(--slate-500);line-height:1.55}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--navy-700);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{
+  font-family:var(--f-disp);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--slate-500);border-bottom-color:var(--navy-600);
+}
+th[data-sort]{cursor:pointer} th[data-sort]:hover{color:var(--gold-300)}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--navy-750)}
+tbody tr.clickable{cursor:pointer}
+
+/* ---------- stat strip ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:1px;background:var(--navy-700);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--navy-800);padding:10px 12px}
+.stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--slate-500);font-weight:600;display:flex;align-items:center;gap:4px}
+.stat .v{font-family:var(--f-mono);font-size:19px;font-weight:600;color:var(--white);font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .v small{font-size:11px;color:var(--slate-500);font-weight:500}
+.stat.hero{background:var(--navy-750)}
+.stat.hero .v{color:var(--gold-500);font-size:23px}
+
+/* ---------- help / explainers ---------- */
+.hq{
+  display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;flex:0 0 13px;
+  border:1px solid var(--slate-500);border-radius:99px;font-size:9px;font-weight:700;color:var(--slate-500);
+  cursor:help;position:relative;font-family:var(--f-body);line-height:1;
+}
+.hq:hover{border-color:var(--gold-500);color:var(--gold-500)}
+.hq::after{
+  content:attr(data-tip);position:absolute;bottom:135%;left:50%;transform:translateX(-50%);
+  width:min(274px,72vw);background:var(--navy-700);color:var(--slate-100);border:1px solid var(--navy-600);
+  border-radius:var(--r);padding:9px 11px;font-size:12px;font-weight:400;line-height:1.5;
+  text-transform:none;letter-spacing:0;z-index:60;pointer-events:none;text-align:left;
+  opacity:0;visibility:hidden;
+}
+.hq:hover::after,.hq:focus-visible::after{opacity:1;visibility:visible}
+
+/* ---------- zone grid ---------- */
+.zonewrap{position:relative;display:inline-block;padding:10px;background:var(--navy-900);border-radius:var(--r-lg);border:1px solid var(--navy-700)}
+.zone{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;width:min(430px,74vw);aspect-ratio:1}
+.zone button{background:var(--navy-800);border-radius:1px;transition:background .08s}
+.zone button.iz{background:var(--navy-750)}
+.zone button:hover{background:var(--gold-500)}
+.zone button.sel{background:var(--gold-500);box-shadow:0 0 0 2px var(--white)}
+.szbox{position:absolute;border:2px solid var(--slate-300);pointer-events:none;border-radius:2px}
+/* The classic 9-box zone, drawn over the fine grid. Its lines sit on real cell
+   boundaries (2/7 and 5/7 of the zone), so the overlay and the derived zone
+   number for each pitch always agree. */
+.szbox>i,.szbox>b{position:absolute;background:var(--slate-300);opacity:.55}
+.szbox>i{top:0;bottom:0;width:1px}
+.szbox>b{left:0;right:0;height:1px}
+.szbox>i:nth-of-type(1){left:28.571%} .szbox>i:nth-of-type(2){left:71.428%}
+.szbox>b:nth-of-type(1){top:28.571%}  .szbox>b:nth-of-type(2){top:71.428%}
+.z9num{position:absolute;font-family:var(--f-mono);font-size:9px;color:var(--slate-500);opacity:.5;pointer-events:none}
+.hmwrap{position:relative;width:100%;max-width:430px}
+.hm{display:grid;grid-template-columns:repeat(13,1fr);gap:0;width:100%;aspect-ratio:1;border-radius:var(--r);overflow:hidden;background:var(--navy-900)}
+.hm div{position:relative}
+.hmlegend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--slate-500);font-family:var(--f-mono);margin-top:9px}
+.hmlegend .bar{height:9px;flex:1;border-radius:2px;min-width:70px}
+.hatch{background-image:repeating-linear-gradient(45deg,transparent 0 3px,rgba(168,179,199,.22) 3px 4px)}
+
+/* ---------- tracking ---------- */
+.trackbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--navy-800);border:1px solid var(--navy-700);border-radius:var(--r-lg);padding:12px 16px}
+.batter{display:flex;align-items:center;gap:11px;min-width:0}
+.batter .slot{font-family:var(--f-disp);font-weight:800;font-size:22px;color:var(--gold-500);line-height:1}
+.batter .nm{font-family:var(--f-disp);font-weight:700;font-size:17px;color:var(--white);text-transform:uppercase;letter-spacing:.02em}
+.batter .meta{font-size:11px;color:var(--slate-500);font-family:var(--f-mono)}
+.count{font-family:var(--f-mono);font-size:30px;font-weight:600;color:var(--white);line-height:1;letter-spacing:-.02em}
+.count small{font-size:10px;display:block;letter-spacing:.1em;color:var(--slate-500);text-transform:uppercase;font-family:var(--f-disp);font-weight:700}
+.steps{display:flex;gap:6px;align-items:center;font-size:11px;font-family:var(--f-disp);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--slate-500)}
+.steps .s{padding:3px 8px;border-radius:99px;border:1px solid var(--navy-600)}
+.steps .s.done{background:var(--navy-700);color:var(--gold-300)}
+.steps .s.now{background:var(--gold-500);color:var(--navy-900);border-color:var(--gold-500)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:7px}
+.pgrid button{
+  padding:13px 6px;border-radius:var(--r);background:var(--navy-750);border:1px solid var(--navy-700);
+  font-family:var(--f-disp);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;text-align:center;
+}
+.pgrid button:hover{background:var(--navy-600);border-color:var(--slate-500)}
+.pgrid button.sel{background:var(--gold-500);color:var(--navy-900);border-color:var(--gold-500)}
+.pgrid button small{display:block;font-size:9.5px;font-weight:600;letter-spacing:.06em;color:var(--slate-500);margin-top:2px}
+.pgrid button.sel small{color:var(--navy-800)}
+.pgrid button:disabled{opacity:.35;cursor:not-allowed}
+.seqlog{display:flex;gap:5px;flex-wrap:wrap}
+.seqlog .p{font-family:var(--f-mono);font-size:11px;padding:3px 7px;border-radius:var(--r);background:var(--navy-750);border:1px solid var(--navy-700);color:var(--slate-300)}
+.seqlog .p.sw{border-color:var(--gold-700);color:var(--gold-300)}
+.seqlog .p.bip{background:var(--gold-500);color:var(--navy-900);border-color:var(--gold-500);font-weight:600}
+
+/* ---------- modal ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(6,12,26,.84);display:flex;align-items:flex-start;justify-content:center;padding:16px;z-index:100;overflow:auto}
+.modal{background:var(--navy-800);border:1px solid var(--navy-600);border-radius:var(--r-lg);padding:20px;width:100%;max-width:780px;margin:auto}
+.modal>header{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.modal>header h2{margin-right:auto}
+
+/* ---------- field ---------- */
+.fieldwrap{width:100%;max-width:440px}
+.fieldwrap svg{display:block;width:100%;height:auto;cursor:crosshair;border-radius:var(--r-lg);background:var(--navy-900);border:1px solid var(--navy-700)}
+
+/* ---------- lineup builder ---------- */
+.lineup{display:flex;flex-direction:column;gap:6px}
+.lu{display:flex;align-items:center;gap:9px}
+.lu .s{font-family:var(--f-disp);font-weight:800;font-size:14px;color:var(--gold-500);width:18px;text-align:right;flex:0 0 18px}
+.lu select{flex:1;min-width:0}
+.lu .mv{display:flex;gap:2px}
+.lu .mv button{padding:4px 7px;border:1px solid var(--navy-700);border-radius:var(--r);color:var(--slate-500);font-size:11px;line-height:1}
+.lu .mv button:hover{color:var(--gold-500);border-color:var(--gold-700)}
+
+/* ---------- count matrix ---------- */
+.cmx{display:grid;grid-template-columns:auto repeat(3,1fr);gap:1px;background:var(--navy-700);border-radius:var(--r);overflow:hidden}
+.cmx>div,.cmx>button{background:var(--navy-800);padding:7px 9px;text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--slate-100)}
+.cmx>div.h{font-family:var(--f-disp);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--slate-500);background:var(--navy-850)}
+.cmx>button:hover{background:var(--navy-600)}
+.cmx>button[aria-pressed="true"]{background:var(--gold-500);color:var(--navy-900);font-weight:600}
+.cmx .sm{display:block;font-size:9.5px;color:var(--slate-500)}
+.cmx>button[aria-pressed="true"] .sm{color:var(--navy-800)}
+
+@media (max-width:760px){
+  nav.tabs{width:100%;margin-left:0}
+  .count{font-size:24px}
+  .zone{width:min(430px,86vw)}
+  .trackbar{gap:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<div class="shell">
+  <header class="top">
+    <div class="logo" id="logo"></div>
+    <nav class="tabs" id="tabs"></nav>
+    <span id="sync">connecting</span>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="modal"></div>
+<script>
+/* ============================================================
+   CORE -- constants, storage seam, boot
+   ------------------------------------------------------------
+   PORTABILITY: every read and write in this app goes through
+   `store`. The Claude-artifact `db` implementation is the only
+   place `claude.use()` appears. To move this app off the
+   artifact, write one new object with the same method names
+   (see PORTING.md) and change STORE_IMPL. Nothing else in this
+   file or the ones after it knows where data lives.
+   ============================================================ */
+
+/* ---------- domain constants ---------- */
+
+const PITCH_TYPES = [
+  {code:'FB', label:'FB',  name:'Fastball'},
+  {code:'SI', label:'SI',  name:'Sinker / two-seam'},
+  {code:'CT', label:'CT',  name:'Cutter'},
+  {code:'SL', label:'SL',  name:'Slider'},
+  {code:'CB', label:'CB',  name:'Curveball'},
+  {code:'CH', label:'CH',  name:'Changeup'},
+  {code:'SP', label:'SP',  name:'Splitter'},
+];
+const PT_NAME = Object.fromEntries(PITCH_TYPES.map(p=>[p.code,p.name]));
+
+// A decision is what the hitter did. Ball/strike is derived from the zone tap.
+const DECISIONS = [
+  {code:'taken',      label:'Taken',    hint:'no swing'},
+  {code:'swing_miss', label:'Whiff',    hint:'swing, miss'},
+  {code:'foul',       label:'Foul',     hint:'swing, foul'},
+  {code:'in_play',    label:'In Play',  hint:'pick result'},
+  {code:'hbp',        label:'HBP',      hint:'hit by pitch'},
+];
+
+// Ball-in-play results. `ab` = counts as an at-bat, `bases` = for slugging.
+const RESULTS = [
+  {code:'1B',  label:'Single',      bases:1, hit:true,  ab:true},
+  {code:'2B',  label:'Double',      bases:2, hit:true,  ab:true},
+  {code:'3B',  label:'Triple',      bases:3, hit:true,  ab:true},
+  {code:'HR',  label:'Home Run',    bases:4, hit:true,  ab:true},
+  {code:'OUT', label:'Out',         bases:0, hit:false, ab:true},
+  {code:'FC',  label:'Fielders Ch', bases:0, hit:false, ab:true},
+  {code:'DP',  label:'Double Play', bases:0, hit:false, ab:true},
+  {code:'E',   label:'Reach / Err', bases:0, hit:false, ab:true},
+  {code:'SF',  label:'Sac Fly',     bases:0, hit:false, ab:false},
+  {code:'SAC', label:'Sac Bunt',    bases:0, hit:false, ab:false},
+];
+const RES = Object.fromEntries(RESULTS.map(r=>[r.code,r]));
+
+// wOBA linear weights, 2024 MLB season (FanGraphs). Stated in the UI.
+const WOBA_W = {uBB:0.696, HBP:0.726, '1B':0.883, '2B':1.244, '3B':1.569, HR:2.004};
+const WOBA_SCALE_NOTE = '2024 MLB linear weights';
+
+/* ---------- zone geometry ----------
+   13 x 13 grid over the plate region. The inner 7 x 7 (rows and
+   cols 3-9) is the rulebook strike zone, so a taken pitch becomes
+   a ball or a called strike from the tap alone -- the coach never
+   enters a count. Row 0 is the TOP of the zone (high pitches).
+   Col 0 is the coach's left looking in from behind the catcher. */
+const GRID = 13, IZ_LO = 3, IZ_HI = 9;
+const inZone = (r,c)=> r>=IZ_LO && r<=IZ_HI && c>=IZ_LO && c<=IZ_HI;
+// Distance in cells outside the zone edge -- 0 is in the zone.
+function zoneDist(r,c){
+  const dr = r<IZ_LO ? IZ_LO-r : (r>IZ_HI ? r-IZ_HI : 0);
+  const dc = c<IZ_LO ? IZ_LO-c : (c>IZ_HI ? c-IZ_HI : 0);
+  return Math.max(dr,dc);
+}
+// Chase zone = the ring just outside the zone (where swings are the real mistake).
+const inChase = (r,c)=> zoneDist(r,c)>=1 && zoneDist(r,c)<=2;
+
+/* The familiar 9-box zone, derived from the fine grid rather than stored.
+   Bands are 2/3/2 cells, so the boxes are symmetric and the drawn overlay
+   lines land exactly on cell boundaries. Numbered 1-9 like a scorebook:
+   1 is up and to the coach's left looking in from behind the catcher. */
+function zone9band(i){ const k = i - IZ_LO; return k < 2 ? 0 : (k < 5 ? 1 : 2); }
+function zone9(r, c){
+  if(!inZone(r,c)) return null;
+  return zone9band(r)*3 + zone9band(c) + 1;
+}
+// Marks the nine-box grid lines that a 13x13 overlay needs.
+const SZ9 = '<i></i><i></i><b></b><b></b>';
+
+/* ============================================================
+   LINEUPS -- a flat, append-only list
+   ------------------------------------------------------------
+   Every lineup change is one entry: who took which slot, and at
+   which pitch. Nothing is ever rewritten, so history survives and
+   a substitution cannot corrupt what came before. `athleteId:null`
+   is how a slot gets emptied.
+
+   Flat on purpose. The earlier shape nested an array inside an
+   array inside the game document, which document stores generally
+   refuse and which does not map onto a table. This is one list:
+     [{lineup:'A', slot:0, athleteId:'x', enteredAtPitchSeq:1}, ...]
+   ============================================================ */
+
+// Reads either shape, so games recorded before the change still open.
+function lineupEntries(g){
+  if(Array.isArray(g.lineup)) return g.lineup;
+  const out = [];
+  if(g.lineups){                                  // legacy nested shape
+    for(const L of ['A','B']){
+      const side = g.lineups[L];
+      if(!Array.isArray(side)) continue;
+      side.forEach((list, slot)=>{
+        (Array.isArray(list)?list:[]).forEach(occ=>{
+          out.push({lineup:L, slot, athleteId:occ.athleteId,
+                    enteredAtPitchSeq:occ.enteredAtPitchSeq || 1});
+        });
+      });
+    }
+  }
+  g.lineup = out;
+  return out;
+}
+
+// Who holds this slot right now: the last entry appended for it.
+function occupantOf(g, L, slot){
+  const es = lineupEntries(g);
+  for(let i=es.length-1; i>=0; i--){
+    const e = es[i];
+    if(e.lineup===L && e.slot===slot) return e.athleteId || null;
+  }
+  return null;
+}
+
+// Everyone who has held the slot, in order -- for the report and the sub screen.
+function slotHistory(g, L, slot){
+  return lineupEntries(g).filter(e=>e.lineup===L && e.slot===slot);
+}
+
+const sidesOf = g => g.lineupMode==='dual' ? ['A','B'] : ['A'];
+
+/* ---------- small utils ---------- */
+const $  = (s,el)=> (el||document).querySelector(s);
+const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
+const pct  = (v,d)=> v==null||!isFinite(v) ? '--' : (v*100).toFixed(d==null?1:d)+'%';
+const avg3 = v => v==null||!isFinite(v) ? '--' : v.toFixed(3).replace(/^0/,'');
+const n1   = v => v==null||!isFinite(v) ? '--' : v.toFixed(1);
+const sgn1 = v => v==null||!isFinite(v) ? '--' : (v>0?'+':'')+v.toFixed(1);
+const todayISO = ()=> new Date().toLocaleDateString('en-CA');
+function fmtDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function help(tip){ return `<span class="hq" tabindex="0" role="note" data-tip="${esc(tip)}">?</span>`; }
+function toast(msg,bad){
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:200;'
+    + 'background:'+(bad?'var(--bad)':'var(--gold-500)')+';color:var(--navy-900);font-weight:600;'
+    + 'padding:10px 18px;border-radius:4px;font-family:var(--f-disp);text-transform:uppercase;'
+    + 'letter-spacing:.06em;font-size:13px;max-width:90vw;text-align:center';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), bad?4200:1900);
+}
+
+/* ---------- logo (inline SVG, rebuilt from the team mark) ---------- */
+function renderLogo(){
+  $('#logo').innerHTML = `
+    <svg width="40" height="44" viewBox="0 0 40 44" role="img" aria-label="Mount Marty Baseball">
+      <path d="M8 3h24l3 21c.4 3-1 6-3.6 7.6L20 39 8.6 31.6C6 30 4.6 27 5 24z"
+            fill="none" stroke="#F9A81A" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M20 8.5v19M20 8.5l-5.5 6.5h11z" fill="none" stroke="#FFFFFF"
+            stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M13.5 19.5h13" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+    <span class="wm"><i>Mount Marty</i><b>Hitter Tracker</b></span>`;
+}
+
+/* ============================================================
+   STORAGE SEAM
+   Ten methods. Everything above the seam is plain JS.
+   ============================================================ */
+
+const LS_KEY = 'mmb_tracker_cache_v1';
+const LS_QUEUE = 'mmb_tracker_queue_v1';
+
+/* --- implementation A: Claude artifact `db` --- */
+const dbStore = {
+  name:'artifact-db', db:null,
+  async init(){
+    this.db = await claude.use('db');
+    return !!this.db;
+  },
+  async loadAll(){
+    const [a,g,p] = await Promise.all([
+      this.db.collection('athletes').get(),
+      this.db.collection('games').get(),
+      this.db.collection('pitches').get(),
+    ]);
+    const rows = s => (s.docs||s||[]).map(d=> d.data ? {id:d.id, ...d.data()} : d);
+    return {athletes:rows(a), games:rows(g), pitches:rows(p)};
+  },
+  put(coll,id,data){ return this.db.doc(coll+'/'+id).set(data); },
+  del(coll,id){ return this.db.doc(coll+'/'+id).delete(); },
+  watch(coll,cb){
+    if(!this.db.collection(coll).onSnapshot) return null;
+    return this.db.collection(coll).onSnapshot(s=>{
+      const rows = (s.docs||[]).map(d=> d.data ? {id:d.id, ...d.data()} : d);
+      cb(rows);
+    });
+  },
+};
+
+/* --- implementation B: Supabase (the hosted, shareable deployment) ---
+   Same ten methods. Plain fetch against PostgREST plus Supabase Auth --
+   no client library, so there is nothing to keep up to date and nothing
+   to break. Changes from other devices arrive by polling, which for a
+   dugout with two or three tablets is both plenty and far more robust
+   than a websocket that has to survive a stadium wifi handover. */
+const SB_KEY = 'mmb_backend_v1';
+const SB_SESSION = 'mmb_session_v1';
+const SB_POLL_MS = 5000;
+
+// Column names are snake_case in Postgres and camelCase in the app.
+const SB_TABLES = {
+  athletes: {table:'athletes', map:{classYear:'class_year'}},
+  games:    {table:'games',    map:{lineupMode:'lineup_mode', gameType:'game_type', createdAt:'created_at'}},
+  pitches:  {table:'pitches',  map:{gameId:'game_id', paSeq:'pa_seq', gameType:'game_type',
+                                    athleteId:'athlete_id', zoneRow:'zone_row', zoneCol:'zone_col',
+                                    inZone:'in_zone', pitchType:'pitch_type', pitcherHand:'pitcher_hand',
+                                    createdAt:'created_at'}},
+};
+const snake = s => s.replace(/[A-Z]/g, c=>'_'+c.toLowerCase());
+const camel = s => s.replace(/_([a-z])/g, (_,c)=>c.toUpperCase());
+const toRow = obj => Object.fromEntries(Object.entries(obj).map(([k,v])=>[snake(k), v]));
+const fromRow = row => Object.fromEntries(Object.entries(row).map(([k,v])=>[camel(k), v]));
+
+function sbConfig(){
+  try{ return JSON.parse(localStorage.getItem(SB_KEY)) || null; }catch(e){ return null; }
+}
+function sbSession(){
+  try{ return JSON.parse(localStorage.getItem(SB_SESSION)) || null; }catch(e){ return null; }
+}
+
+const supabaseStore = {
+  name:'supabase', cfg:null, session:null, timers:[],
+
+  async init(){
+    this.cfg = sbConfig();
+    this.session = sbSession();
+    if(!this.cfg || !this.session) return false;
+    /* Prove BOTH that the token is valid and that this email is on the coaches
+       list. A 200 is not enough: row-level security hides rows rather than
+       refusing the request, so someone who signed up but was never added comes
+       back as a perfectly successful EMPTY result. The row count is the check. */
+    const r = await this.req('GET', 'coaches?select=email&limit=1');
+    if(!r.ok) return false;
+    const rows = await r.json().catch(()=>[]);
+    return Array.isArray(rows) && rows.length > 0;
+  },
+
+  async req(method, path, body){
+    const headers = {
+      apikey: this.cfg.anonKey,
+      Authorization: 'Bearer ' + this.session.access_token,
+      'Content-Type': 'application/json',
+    };
+    // Upserts key on the primary key; reads must not ask for a minimal body.
+    if(method === 'POST') headers.Prefer = 'resolution=merge-duplicates,return=minimal';
+    return fetch(this.cfg.url.replace(/\/$/,'') + '/rest/v1/' + path, {
+      method, headers,
+      body: body===undefined ? undefined : JSON.stringify(body),
+    });
+  },
+
+  async loadAll(){
+    const out = {};
+    for(const key of ['athletes','games','pitches']){
+      const res = await this.req('GET', SB_TABLES[key].table + '?select=*');
+      if(!res.ok) throw new Error(key+' read failed: '+res.status+' '+(await res.text()).slice(0,180));
+      out[key] = (await res.json()).map(fromRow);
+    }
+    return out;
+  },
+
+  async put(coll, id, data){
+    const res = await this.req('POST', SB_TABLES[coll].table, [toRow({...data, id})]);
+    if(!res.ok) throw new Error('write failed: '+res.status+' '+(await res.text()).slice(0,180));
+  },
+
+  async del(coll, id){
+    const res = await this.req('DELETE', SB_TABLES[coll].table + '?id=eq.' + encodeURIComponent(id));
+    if(!res.ok) throw new Error('delete failed: '+res.status);
+  },
+
+  // Polling stands in for a subscription: fetch, compare, notify on change.
+  watch(coll, cb){
+    let last = null;
+    const tick = async ()=>{
+      try{
+        const res = await this.req('GET', SB_TABLES[coll].table + '?select=*');
+        if(!res.ok) return;
+        const rows = (await res.json()).map(fromRow);
+        const sig = JSON.stringify(rows.map(r=>r.id).sort()) + '|' + rows.length;
+        if(sig !== last){ last = sig; cb(rows); }
+      }catch(e){ /* offline; the next tick retries */ }
+    };
+    const t = setInterval(tick, SB_POLL_MS);
+    this.timers.push(t);
+    return ()=>clearInterval(t);
+  },
+};
+
+/* Supabase Auth over plain REST. Two ways in, because the free tier will not
+   let you edit the email template without paying for custom SMTP:
+
+   - The LINK. The stock email sends a magic link. Clicking it lands back here
+     with the session in the URL fragment, which `consumeAuthHash` picks up.
+     This needs no template edit and no SMTP, so it is the default path.
+   - The CODE. If someone does add SMTP and puts {{ .Token }} in the template,
+     the six-digit box still works. Kept as a fallback, not the main road. */
+function siteRedirect(){
+  return location.origin + location.pathname;
+}
+async function sbSendLink(url, anonKey, email, redirectTo){
+  const res = await fetch(
+    url.replace(/\/$/,'') + '/auth/v1/otp?redirect_to=' + encodeURIComponent(redirectTo),
+    {
+      method:'POST',
+      headers:{apikey:anonKey, 'Content-Type':'application/json'},
+      body: JSON.stringify({email, create_user:true}),
+    });
+  if(!res.ok){
+    const t = (await res.text()).slice(0,300);
+    let msg = t;
+    try{ const j = JSON.parse(t); msg = j.msg || j.error_description || j.message || t; }catch(e){}
+    throw new Error(msg || 'could not send the email');
+  }
+}
+
+/* Read a session handed back by a magic link, then scrub it out of the address
+   bar so the tokens are not left sitting in history or a shared screenshot. */
+function consumeAuthHash(){
+  const h = location.hash || '';
+  if(!h.includes('access_token') && !h.includes('error')) return null;
+  const p = new URLSearchParams(h.replace(/^#/, ''));
+  const clean = ()=>{ try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} };
+
+  const err = p.get('error_description') || p.get('error');
+  if(err){ clean(); return {error: decodeURIComponent(err).replace(/\+/g,' ')}; }
+
+  const access_token = p.get('access_token');
+  if(!access_token){ clean(); return null; }
+  const session = {
+    access_token,
+    refresh_token: p.get('refresh_token') || null,
+    expires_at: p.get('expires_at') || null,
+  };
+  try{ localStorage.setItem(SB_SESSION, JSON.stringify(session)); }catch(e){}
+  clean();
+  return {session};
+}
+async function sbVerifyCode(url, anonKey, email, token){
+  const res = await fetch(url.replace(/\/$/,'') + '/auth/v1/verify', {
+    method:'POST',
+    headers:{apikey:anonKey, 'Content-Type':'application/json'},
+    body: JSON.stringify({type:'email', email, token}),
+  });
+  const body = await res.json().catch(()=>({}));
+  if(!res.ok || !body.access_token) throw new Error(body.msg || body.error_description || 'that code did not work');
+  return body;
+}
+
+/* --- implementation C: browser-only fallback ---
+   Used when the page runs outside claude.ai, or when the viewer
+   declines the db grant. Same methods, localStorage underneath,
+   so the app is fully usable and nothing is silently lost. */
+const localStore = {
+  name:'local-only',
+  async init(){ return true; },
+  async loadAll(){
+    try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {athletes:[],games:[],pitches:[]}; }
+    catch(e){ return {athletes:[],games:[],pitches:[]}; }
+  },
+  async put(){ persistCache(); },
+  async del(){ persistCache(); },
+  watch(){ return null; },
+};
+
+let store = localStore;
+
+/* ---------- in-memory state ----------
+   The whole dataset is small (a full season is a few thousand
+   pitches), so it lives in memory and every view computes from
+   it. Writes update memory first, then the store. */
+const S = {
+  athletes:[], games:[], pitches:[],
+  tab:'live',
+  liveGameId:null,
+  pending:{zone:null, pt:null},       // half-entered pitch on the tracking screen
+  activeLineup:'A',
+  athleteId:null,                      // hitter page selection
+  reportGameId:null,
+  filters:{gameType:'game', count:'all', pt:'all', hand:'all', from:'', to:''},
+  hmMetric:'density',
+  ready:false, online:false,
+};
+
+function persistCache(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      athletes:S.athletes, games:S.games, pitches:S.pitches
+    }));
+  }catch(e){ /* quota or private mode -- the db copy is authoritative anyway */ }
+}
+
+/* ---------- write queue ----------
+   A dead wifi spot in the dugout must not lose a pitch. Every
+   write is applied to memory and localStorage immediately, then
+   pushed to the store. Failures land in a queue that is retried
+   on the next write and on `online`. */
+let queue = [];
+try{ queue = JSON.parse(localStorage.getItem(LS_QUEUE)) || []; }catch(e){ queue = []; }
+function saveQueue(){
+  try{ localStorage.setItem(LS_QUEUE, JSON.stringify(queue)); }catch(e){}
+  setSync();
+}
+
+/* Documents this device is mid-write on. A snapshot that arrives while a
+   write is in flight carries the OLD version of the document, and adopting
+   it would silently undo the edit the coach just made -- a substitution
+   snapping back to the previous hitter, for instance. Local wins until the
+   write settles. */
+const inflight = new Set();
+
+/* Ids this device has deleted. A snapshot taken before the delete landed still
+   lists the row, and adopting it would resurrect a pitch the coach just undid
+   -- or leave half a deleted game lying around. Ids are unique and never
+   reused, so a tombstone is safe to keep for the session. */
+const tombstones = new Set();
+
+async function write(coll,id,data){
+  persistCache();
+  if(store === localStore) return;
+  inflight.add(id);
+  try{
+    await store.put(coll,id,data);
+    if(queue.length) flushQueue();
+  }catch(e){
+    queue.push({coll,id,data,op:'put'});
+    saveQueue();
+  }finally{
+    inflight.delete(id);
+  }
+  setSync();
+}
+async function remove(coll,id){
+  tombstones.add(id);
+  persistCache();
+  if(store === localStore) return;
+  inflight.add(id);
+  try{ await store.del(coll,id); }
+  catch(e){ queue.push({coll,id,op:'del'}); saveQueue(); }
+  finally{ inflight.delete(id); }
+  setSync();
+}
+let flushing = false;
+async function flushQueue(){
+  if(flushing || !queue.length || store===localStore) return;
+  flushing = true;
+  const batch = queue.slice();
+  for(const job of batch){
+    try{
+      if(job.op==='del') await store.del(job.coll, job.id);
+      else await store.put(job.coll, job.id, job.data);
+      queue = queue.filter(q=>q!==job);
+    }catch(e){ break; }
+  }
+  saveQueue();
+  flushing = false;
+}
+window.addEventListener('online', flushQueue);
+
+function setSync(){
+  const el = $('#sync'); if(!el) return;
+  if(store === supabaseStore && queue.length===0){
+    el.className='on'; el.textContent='synced';
+    return;
+  }
+  if(store === localStore){
+    el.className='off';
+    el.textContent = S.ready ? 'this device only' : 'connecting';
+  }else if(queue.length){
+    el.className='err'; el.textContent = queue.length+' pitch'+(queue.length>1?'es':'')+' unsent';
+  }else{
+    el.className='on'; el.textContent='synced';
+  }
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  renderLogo();
+  renderTabs();
+
+  // Render immediately from the local cache so the dugout never
+  // stares at a spinner, then upgrade to the shared store.
+  const cached = await localStore.loadAll();
+  Object.assign(S, cached);
+  adoptLiveGame();
+  S.ready = true;
+  render();
+
+  /* Which backend? The artifact's own database when running on claude.ai,
+     otherwise Supabase if this deployment is configured for it, otherwise
+     this device only. The app above the seam never knows the difference. */
+  const onArtifact = typeof claude !== 'undefined' && !!claude.use;
+
+  if(!onArtifact){
+    if(!sbConfig()){ S.gate = 'setup'; render(); return; }
+    // A magic link lands here with the session in the fragment.
+    const handoff = consumeAuthHash();
+    if(handoff && handoff.error){
+      S.gate = 'signin';
+      S.gateError = handoff.error + ' -- request a new sign-in email.';
+      render();
+      return;
+    }
+    if(!sbSession()){ S.gate = 'signin'; render(); return; }
+    try{
+      if(await supabaseStore.init()){
+        store = supabaseStore;
+        await adoptRemote();
+        setSync();
+        return;
+      }
+      // Signed in but rejected: expired token, or not on the coaches list.
+      S.gate = 'signin';
+      S.gateError = 'That sign-in is no longer valid, or your email is not on the coaches list yet.';
+      try{ localStorage.removeItem(SB_SESSION); }catch(e){}
+      render();
+      return;
+    }catch(e){
+      toast('Could not reach the database -- working on this device only', true);
+      setSync();
+      return;
+    }
+  }
+
+  let db = null;
+  try{ db = await claude.use('db'); }
+  catch(e){ db = null; }
+
+  if(db){
+    dbStore.db = db;
+    store = dbStore;
+    try{
+      await adoptRemote();
+    }catch(e){
+      store = localStore;
+      toast('Could not reach shared storage -- working on this device only', true);
+    }
+  }
+  setSync();
+  render();
+}
+
+/* Pull everything from whichever shared store is active, then keep watching it. */
+async function adoptRemote(){
+  const remote = await store.loadAll();
+  // The shared store is authoritative; local edits still in flight win.
+  S.athletes = mergeRows(remote.athletes, S.athletes);
+  S.games    = mergeRows(remote.games, S.games);
+  S.pitches  = mergeRows(remote.pitches, S.pitches);
+  persistCache();
+  adoptLiveGame();
+  S.online = true;
+  S.gate = null;
+  flushQueue();
+  for(const c of ['athletes','games','pitches']){
+    try{
+      store.watch(c, rows=>{
+        S[c] = mergeRows(rows, S[c]);
+        persistCache();
+        render();
+        drawModal();   // an open dialog must follow the data too
+      });
+    }catch(e){}
+  }
+  render();
+}
+
+/* Remote wins, with two exceptions that would otherwise lose the coach's work:
+   a row this device is still writing, and a row whose write failed and is
+   sitting in the retry queue. Both keep the local copy. */
+function mergeRows(remote, local){
+  const localById = new Map(local.map(r=>[r.id, r]));
+  const queued = new Set(queue.map(q=>q.id));
+  const keepLocal = id => inflight.has(id) || queued.has(id);
+
+  const out = remote
+    .filter(r => !tombstones.has(r.id))
+    .map(r => keepLocal(r.id) && localById.has(r.id) ? localById.get(r.id) : r);
+  const seen = new Set(remote.map(r=>r.id));
+  for(const r of local){
+    if(tombstones.has(r.id)) continue;
+    if(!seen.has(r.id) && keepLocal(r.id)) out.push(r);
+  }
+  return out;
+}
+
+function adoptLiveGame(){
+  const live = S.games.filter(g=>g.status==='live').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
+  S.liveGameId = live ? live.id : null;
+  if(live) S.activeLineup = live.state?.activeLineup || 'A';
+}
+</script>
+<script>
+/* Reference tables built from mlb_db by condense_lookups.py -- do not hand-edit.
+   MLB league averages only (means by bin); no individual player data. */
+const LOOKUPS={"source":"mlb_db.pbp_raw + pbp_descriptions, level_id=1, game_type=R, 2021-2025","min_n":200,"ev":{"lo":20,"step":2,"n":52},"la":{"lo":-60,"step":3,"n":46},"grid":[[0.391,0.476,0.472,0.433,0.418,0.409,0.395,0.398,0.39,0.399,0.397,0.407,0.438,0.456,0.47,0.468,0.486,0.491,0.488,0.486,0.487,0.462,0.45,0.433,0.45,0.417,0.376,0.375,0.374,0.329,0.299,0.279,0.27,0.246,0.227,0.218,0.211,0.19,0.15,0.138,0.121,0.105,0.082,0.065,0.052,0.047],[0.409,0.428,0.436,0.403,0.401,0.39,0.396,0.378,0.384,0.381,0.389,0.414,0.437,0.459,0.472,0.494,0.481,0.458,0.457,0.46,0.466,0.435,0.433,0.424,0.44,0.416,0.38,0.372,0.374,0.33,0.31,0.286,0.245,0.245,0.232,0.223,0.204,0.154,0.141,0.118,0.1,0.086,0.069,0.053,0.047,0.05],[0.448,0.429,0.424,0.431,0.405,0.385,0.4,0.394,0.41,0.41,0.41,0.432,0.447,0.463,0.463,0.471,0.448,0.46,0.471,0.459,0.431,0.444,0.43,0.452,0.433,0.423,0.407,0.371,0.341,0.353,0.317,0.295,0.263,0.247,0.251,0.218,0.161,0.139,0.121,0.11,0.101,0.075,0.067,0.048,0.05,0.052],[0.418,0.416,0.402,0.412,0.4,0.39,0.368,0.407,0.412,0.406,0.45,0.456,0.441,0.442,0.476,0.463,0.454,0.48,0.487,0.473,0.444,0.447,0.444,0.458,0.437,0.439,0.412,0.381,0.35,0.348,0.321,0.286,0.263,0.261,0.234,0.203,0.147,0.133,0.114,0.106,0.095,0.075,0.05,0.053,0.053,0.048],[0.403,0.398,0.391,0.401,0.417,0.391,0.369,0.39,0.4,0.398,0.442,0.443,0.431,0.45,0.474,0.468,0.484,0.461,0.456,0.448,0.431,0.437,0.428,0.444,0.42,0.424,0.399,0.357,0.349,0.332,0.334,0.273,0.25,0.23,0.209,0.196,0.148,0.13,0.105,0.093,0.091,0.071,0.047,0.049,0.05,0.034],[0.397,0.382,0.384,0.385,0.399,0.379,0.364,0.384,0.387,0.378,0.423,0.432,0.414,0.436,0.467,0.455,0.461,0.431,0.43,0.405,0.418,0.43,0.474,0.446,0.419,0.428,0.399,0.364,0.324,0.31,0.298,0.258,0.236,0.225,0.19,0.189,0.144,0.126,0.098,0.087,0.094,0.069,0.051,0.047,0.046,0.036],[0.37,0.371,0.361,0.35,0.369,0.355,0.345,0.37,0.384,0.388,0.422,0.419,0.409,0.44,0.454,0.44,0.442,0.412,0.41,0.377,0.397,0.425,0.465,0.43,0.396,0.4,0.41,0.36,0.323,0.298,0.287,0.253,0.244,0.236,0.209,0.194,0.154,0.129,0.095,0.078,0.086,0.064,0.042,0.041,0.04,0.029],[0.367,0.38,0.363,0.346,0.38,0.357,0.354,0.365,0.389,0.389,0.418,0.417,0.415,0.431,0.429,0.401,0.407,0.394,0.396,0.361,0.377,0.397,0.43,0.392,0.399,0.384,0.381,0.345,0.331,0.299,0.29,0.255,0.241,0.231,0.219,0.193,0.163,0.136,0.102,0.087,0.07,0.064,0.039,0.034,0.033,0.031],[0.358,0.363,0.353,0.337,0.352,0.342,0.345,0.343,0.365,0.38,0.403,0.398,0.41,0.424,0.411,0.382,0.383,0.361,0.371,0.342,0.358,0.376,0.402,0.369,0.371,0.359,0.363,0.332,0.304,0.272,0.249,0.204,0.196,0.194,0.197,0.198,0.162,0.132,0.109,0.085,0.076,0.045,0.031,0.029,0.028,0.022],[0.349,0.367,0.349,0.351,0.291,0.295,0.315,0.389,0.366,0.377,0.354,0.347,0.354,0.362,0.358,0.326,0.323,0.294,0.311,0.285,0.293,0.315,0.344,0.301,0.306,0.294,0.27,0.248,0.244,0.216,0.22,0.195,0.194,0.206,0.158,0.149,0.126,0.116,0.098,0.08,0.066,0.045,0.034,0.029,0.022,0.018],[0.345,0.365,0.371,0.347,0.309,0.309,0.328,0.358,0.328,0.324,0.315,0.295,0.301,0.304,0.301,0.275,0.283,0.265,0.267,0.246,0.268,0.27,0.289,0.272,0.268,0.257,0.243,0.218,0.214,0.196,0.197,0.17,0.167,0.166,0.167,0.117,0.101,0.097,0.087,0.074,0.066,0.044,0.035,0.03,0.02,0.013],[0.277,0.304,0.315,0.305,0.29,0.283,0.299,0.306,0.297,0.286,0.268,0.249,0.247,0.247,0.246,0.224,0.226,0.222,0.232,0.206,0.224,0.216,0.223,0.209,0.208,0.197,0.19,0.186,0.19,0.177,0.166,0.142,0.122,0.104,0.097,0.09,0.097,0.074,0.066,0.056,0.048,0.035,0.026,0.026,0.017,0.011],[0.249,0.273,0.277,0.279,0.291,0.275,0.284,0.238,0.223,0.199,0.197,0.174,0.179,0.173,0.168,0.205,0.185,0.184,0.185,0.17,0.173,0.183,0.192,0.179,0.166,0.168,0.152,0.149,0.154,0.149,0.128,0.114,0.095,0.073,0.057,0.059,0.054,0.045,0.044,0.053,0.033,0.023,0.017,0.019,0.015,0.01],[0.237,0.261,0.266,0.264,0.274,0.257,0.252,0.203,0.187,0.18,0.189,0.169,0.165,0.145,0.143,0.163,0.161,0.146,0.149,0.138,0.15,0.152,0.154,0.152,0.149,0.125,0.143,0.142,0.159,0.136,0.124,0.111,0.099,0.07,0.054,0.042,0.032,0.021,0.023,0.032,0.024,0.021,0.02,0.015,0.014,0.01],[0.239,0.245,0.25,0.24,0.268,0.242,0.236,0.181,0.165,0.152,0.164,0.158,0.146,0.119,0.103,0.105,0.124,0.129,0.123,0.123,0.129,0.13,0.138,0.134,0.123,0.123,0.136,0.138,0.139,0.144,0.115,0.092,0.064,0.062,0.037,0.026,0.008,0.004,0.009,0.009,0.01,0.011,0.009,0.003,0.008,0.008],[0.23,0.253,0.267,0.252,0.24,0.212,0.216,0.178,0.168,0.147,0.154,0.133,0.123,0.112,0.101,0.103,0.103,0.113,0.103,0.114,0.101,0.126,0.129,0.148,0.142,0.136,0.143,0.15,0.148,0.154,0.142,0.129,0.1,0.077,0.054,0.012,0.0,0.014,0.01,0.005,0.002,0.002,0.002,0.0,0.003,0.006],[0.233,0.245,0.245,0.231,0.21,0.194,0.192,0.165,0.146,0.128,0.128,0.113,0.112,0.1,0.091,0.091,0.09,0.101,0.091,0.094,0.084,0.114,0.13,0.153,0.146,0.154,0.152,0.175,0.162,0.188,0.181,0.181,0.15,0.102,0.074,0.039,0.025,0.014,0.003,0.0,0.0,0.0,0.003,0.002,0.009,0.012],[0.25,0.252,0.262,0.253,0.214,0.183,0.155,0.139,0.125,0.119,0.115,0.11,0.119,0.113,0.108,0.097,0.101,0.106,0.11,0.12,0.112,0.122,0.129,0.164,0.158,0.163,0.174,0.202,0.215,0.232,0.245,0.23,0.198,0.14,0.108,0.064,0.039,0.022,0.007,0.005,0.003,0.003,0.0,0.004,0.008,0.01],[0.261,0.232,0.241,0.233,0.218,0.189,0.153,0.132,0.112,0.111,0.105,0.112,0.111,0.101,0.091,0.085,0.097,0.094,0.1,0.103,0.119,0.131,0.154,0.172,0.175,0.177,0.197,0.229,0.266,0.293,0.302,0.281,0.235,0.175,0.126,0.084,0.057,0.028,0.011,0.008,0.002,0.002,0.0,0.003,0.003,0.015],[0.271,0.248,0.265,0.24,0.221,0.181,0.145,0.118,0.101,0.1,0.093,0.099,0.093,0.087,0.081,0.087,0.094,0.092,0.094,0.108,0.143,0.156,0.171,0.183,0.192,0.219,0.243,0.289,0.337,0.373,0.382,0.337,0.286,0.214,0.178,0.118,0.084,0.033,0.014,0.008,0.002,0.002,0.0,0.002,0.002,0.011],[0.263,0.244,0.253,0.228,0.216,0.19,0.16,0.128,0.098,0.092,0.082,0.086,0.078,0.076,0.071,0.083,0.09,0.096,0.098,0.106,0.134,0.143,0.166,0.181,0.216,0.268,0.324,0.398,0.461,0.51,0.504,0.434,0.358,0.281,0.239,0.166,0.108,0.043,0.021,0.011,0.003,0.0,0.0,0.0,0.004,0.006],[0.275,0.266,0.268,0.235,0.21,0.184,0.149,0.119,0.089,0.08,0.073,0.073,0.076,0.073,0.074,0.075,0.089,0.097,0.106,0.108,0.138,0.161,0.188,0.204,0.233,0.305,0.39,0.515,0.606,0.665,0.652,0.57,0.467,0.368,0.296,0.22,0.137,0.063,0.024,0.009,0.002,0.0,0.0,0.0,0.003,0.003],[0.273,0.269,0.263,0.238,0.217,0.195,0.155,0.125,0.082,0.082,0.06,0.08,0.066,0.103,0.05,0.078,0.065,0.122,0.101,0.102,0.137,0.161,0.19,0.225,0.27,0.362,0.495,0.64,0.745,0.795,0.779,0.698,0.581,0.453,0.328,0.244,0.148,0.079,0.028,0.009,0.005,0.001,0.001,0.0,0.004,0.006],[0.285,0.277,0.265,0.236,0.212,0.192,0.147,0.121,0.093,0.086,0.071,0.075,0.061,0.076,0.049,0.08,0.085,0.082,0.107,0.131,0.121,0.174,0.192,0.211,0.334,0.388,0.569,0.79,0.884,0.9,0.865,0.829,0.643,0.499,0.356,0.269,0.171,0.105,0.036,0.012,0.006,0.003,0.001,0.0,0.003,0.006],[0.284,0.281,0.268,0.234,0.212,0.181,0.15,0.098,0.103,0.089,0.102,0.056,0.069,0.059,0.075,0.088,0.073,0.079,0.125,0.125,0.128,0.218,0.253,0.263,0.305,0.495,0.664,0.861,0.911,0.905,0.833,0.785,0.671,0.491,0.403,0.268,0.184,0.119,0.056,0.023,0.008,0.003,0.002,0.001,0.004,0.006],[0.282,0.261,0.25,0.22,0.201,0.161,0.141,0.108,0.099,0.083,0.073,0.078,0.05,0.061,0.065,0.061,0.08,0.098,0.092,0.085,0.103,0.175,0.238,0.274,0.303,0.534,0.793,0.898,0.907,0.839,0.684,0.624,0.508,0.428,0.324,0.268,0.161,0.127,0.086,0.036,0.004,0.0,0.004,0.004,0.002,0.005],[0.287,0.261,0.236,0.202,0.188,0.151,0.1,0.102,0.082,0.067,0.064,0.05,0.06,0.075,0.099,0.083,0.09,0.081,0.091,0.104,0.121,0.18,0.261,0.27,0.363,0.615,0.863,0.907,0.853,0.701,0.519,0.332,0.363,0.275,0.277,0.225,0.138,0.149,0.082,0.044,0.011,0.0,0.0,0.0,0.002,0.005],[0.293,0.262,0.225,0.18,0.16,0.131,0.123,0.122,0.069,0.068,0.065,0.062,0.081,0.079,0.072,0.066,0.098,0.107,0.117,0.135,0.164,0.2,0.273,0.3,0.377,0.694,0.895,0.888,0.775,0.548,0.319,0.18,0.15,0.16,0.153,0.137,0.091,0.13,0.095,0.038,0.022,0.007,0.0,0.0,0.0,0.004],[0.299,0.268,0.233,0.183,0.149,0.12,0.078,0.104,0.069,0.061,0.075,0.052,0.061,0.08,0.08,0.085,0.103,0.101,0.124,0.098,0.172,0.237,0.254,0.331,0.457,0.779,0.909,0.875,0.642,0.316,0.151,0.144,0.073,0.06,0.072,0.08,0.07,0.065,0.078,0.029,0.015,0.004,0.003,0.003,0.0,0.0],[0.276,0.262,0.24,0.186,0.14,0.104,0.098,0.108,0.065,0.072,0.064,0.097,0.063,0.069,0.093,0.082,0.082,0.132,0.115,0.16,0.197,0.251,0.316,0.374,0.533,0.85,0.913,0.767,0.471,0.19,0.089,0.053,0.04,0.048,0.047,0.052,0.056,0.068,0.045,0.04,0.021,0.01,0.006,0.005,0.003,0.004],[0.275,0.254,0.234,0.192,0.149,0.111,0.098,0.071,0.075,0.079,0.057,0.035,0.07,0.094,0.085,0.105,0.108,0.129,0.178,0.166,0.232,0.258,0.361,0.418,0.603,0.903,0.885,0.664,0.307,0.147,0.072,0.046,0.023,0.014,0.018,0.024,0.052,0.042,0.032,0.053,0.028,0.01,0.0,0.007,0.0,0.007],[0.273,0.246,0.213,0.172,0.136,0.106,0.08,0.099,0.064,0.088,0.052,0.083,0.072,0.078,0.087,0.121,0.131,0.145,0.153,0.201,0.24,0.343,0.341,0.438,0.697,0.919,0.857,0.512,0.2,0.118,0.058,0.037,0.021,0.005,0.016,0.008,0.017,0.025,0.019,0.028,0.018,0.005,0.002,0.005,0.0,0.017],[0.335,0.267,0.22,0.171,0.141,0.11,0.099,0.085,0.08,0.07,0.095,0.089,0.106,0.103,0.093,0.099,0.135,0.138,0.178,0.186,0.261,0.342,0.444,0.475,0.754,0.909,0.762,0.405,0.164,0.091,0.029,0.023,0.007,0.021,0.01,0.016,0.013,0.028,0.025,0.042,0.027,0.017,0.007,0.005,0.003,0.003],[0.306,0.254,0.199,0.171,0.133,0.114,0.101,0.094,0.098,0.07,0.068,0.101,0.111,0.1,0.103,0.124,0.168,0.173,0.191,0.238,0.283,0.398,0.449,0.512,0.815,0.918,0.668,0.308,0.13,0.066,0.055,0.026,0.022,0.007,0.003,0.001,0.01,0.012,0.017,0.024,0.031,0.006,0.004,0.002,0.011,0.011],[0.279,0.264,0.211,0.173,0.137,0.119,0.101,0.092,0.072,0.078,0.1,0.088,0.11,0.116,0.12,0.142,0.149,0.17,0.211,0.27,0.291,0.425,0.501,0.554,0.857,0.87,0.556,0.248,0.119,0.077,0.068,0.036,0.03,0.005,0.007,0.009,0.009,0.009,0.008,0.023,0.027,0.016,0.008,0.0,0.006,0.009],[0.291,0.252,0.206,0.165,0.117,0.105,0.086,0.079,0.072,0.072,0.123,0.093,0.105,0.124,0.131,0.157,0.177,0.214,0.221,0.3,0.362,0.435,0.481,0.574,0.893,0.838,0.456,0.234,0.146,0.101,0.084,0.057,0.041,0.02,0.008,0.005,0.003,0.006,0.014,0.023,0.028,0.005,0.018,0.013,0.004,0.008],[0.267,0.226,0.185,0.144,0.119,0.106,0.088,0.075,0.077,0.081,0.083,0.103,0.131,0.131,0.167,0.168,0.191,0.208,0.242,0.298,0.399,0.462,0.515,0.642,0.9,0.77,0.425,0.214,0.182,0.167,0.179,0.126,0.088,0.039,0.009,0.009,0.007,0.01,0.009,0.015,0.019,0.011,0.015,0.008,0.009,0.011],[0.229,0.196,0.174,0.159,0.13,0.111,0.099,0.082,0.085,0.105,0.087,0.122,0.119,0.122,0.162,0.199,0.194,0.247,0.277,0.315,0.404,0.478,0.543,0.687,0.908,0.671,0.41,0.242,0.277,0.333,0.287,0.177,0.141,0.063,0.025,0.008,0.005,0.008,0.006,0.031,0.021,0.023,0.015,0.012,0.01,0.013],[0.226,0.181,0.191,0.175,0.137,0.12,0.125,0.099,0.106,0.098,0.103,0.122,0.107,0.156,0.181,0.212,0.23,0.229,0.285,0.358,0.425,0.517,0.588,0.702,0.909,0.658,0.389,0.337,0.425,0.482,0.478,0.345,0.237,0.146,0.053,0.014,0.011,0.013,0.021,0.018,0.03,0.022,0.017,0.016,0.018,0.027],[0.182,0.188,0.177,0.173,0.139,0.114,0.111,0.102,0.106,0.106,0.083,0.136,0.136,0.154,0.17,0.23,0.25,0.275,0.3,0.36,0.439,0.494,0.591,0.742,0.881,0.621,0.428,0.462,0.68,0.796,0.759,0.556,0.329,0.204,0.107,0.039,0.013,0.012,0.006,0.02,0.019,0.019,0.013,0.018,0.016,0.018],[0.19,0.176,0.167,0.144,0.132,0.113,0.111,0.101,0.111,0.112,0.13,0.145,0.148,0.168,0.182,0.211,0.262,0.283,0.309,0.371,0.452,0.547,0.594,0.79,0.884,0.613,0.501,0.672,0.972,1.144,1.039,0.821,0.61,0.28,0.145,0.028,0.03,0.029,0.014,0.014,0.013,0.01,0.008,0.018,0.02,0.019],[0.177,0.168,0.142,0.136,0.114,0.12,0.111,0.099,0.094,0.119,0.136,0.163,0.133,0.171,0.214,0.237,0.285,0.312,0.343,0.407,0.484,0.572,0.626,0.818,0.883,0.606,0.617,0.94,1.348,1.479,1.385,1.13,0.85,0.483,0.339,0.071,0.05,0.03,0.018,0.01,0.006,0.0,0.013,0.009,0.016,0.019],[0.174,0.148,0.134,0.115,0.119,0.109,0.103,0.104,0.101,0.132,0.142,0.15,0.183,0.233,0.183,0.268,0.319,0.325,0.354,0.429,0.485,0.545,0.611,0.843,0.853,0.679,0.757,1.27,1.671,1.736,1.639,1.51,1.152,0.786,0.417,0.285,0.11,0.04,0.017,0.008,0.009,0.007,0.003,0.013,0.009,0.016],[0.148,0.141,0.117,0.121,0.111,0.1,0.11,0.118,0.133,0.147,0.138,0.149,0.151,0.176,0.181,0.237,0.313,0.317,0.402,0.43,0.487,0.572,0.638,0.862,0.869,0.71,0.933,1.519,1.846,1.886,1.856,1.652,1.438,1.07,0.71,0.402,0.193,0.069,0.043,0.018,0.006,0.011,0.006,0.003,0.013,0.009],[0.141,0.119,0.122,0.111,0.105,0.112,0.118,0.119,0.146,0.172,0.148,0.139,0.141,0.131,0.2,0.263,0.297,0.372,0.412,0.432,0.522,0.605,0.672,0.895,0.871,0.752,1.145,1.705,1.942,1.976,1.945,1.881,1.597,1.365,1.005,0.707,0.381,0.188,0.076,0.04,0.017,0.006,0.01,0.006,0.003,0.013],[0.119,0.122,0.112,0.104,0.095,0.119,0.122,0.146,0.164,0.136,0.14,0.126,0.129,0.153,0.2,0.261,0.326,0.376,0.414,0.445,0.549,0.603,0.709,0.925,0.853,0.833,1.328,1.864,1.977,2.0,1.953,1.902,1.779,1.564,1.172,0.947,0.652,0.367,0.183,0.072,0.039,0.017,0.006,0.01,0.006,0.003],[0.122,0.112,0.106,0.094,0.119,0.12,0.145,0.166,0.138,0.137,0.133,0.139,0.149,0.18,0.22,0.29,0.333,0.381,0.423,0.5,0.564,0.648,0.72,0.953,0.913,0.92,1.488,1.732,1.949,1.987,1.965,1.924,1.821,1.68,1.457,1.102,0.908,0.625,0.362,0.181,0.071,0.039,0.017,0.006,0.01,0.006],[0.112,0.106,0.097,0.12,0.12,0.145,0.165,0.138,0.14,0.132,0.135,0.151,0.181,0.209,0.272,0.316,0.361,0.4,0.453,0.528,0.596,0.659,0.778,0.85,0.941,1.12,1.432,1.801,1.977,1.996,1.986,1.941,1.887,1.784,1.649,1.427,1.065,0.898,0.621,0.36,0.18,0.071,0.039,0.017,0.006,0.01],[0.106,0.097,0.12,0.123,0.145,0.164,0.138,0.14,0.134,0.136,0.151,0.178,0.209,0.27,0.308,0.351,0.387,0.424,0.501,0.56,0.617,0.642,0.749,0.821,0.978,1.195,1.536,1.855,1.987,1.976,1.989,1.97,1.925,1.871,1.777,1.634,1.412,1.065,0.895,0.619,0.36,0.18,0.071,0.039,0.017,0.006],[0.097,0.12,0.123,0.146,0.164,0.138,0.14,0.134,0.136,0.152,0.179,0.208,0.273,0.309,0.349,0.386,0.421,0.491,0.54,0.568,0.621,0.711,0.768,0.878,1.057,1.258,1.417,1.662,1.89,1.989,1.97,1.975,1.953,1.923,1.867,1.754,1.634,1.408,1.061,0.895,0.619,0.36,0.18,0.071,0.039,0.017],[0.12,0.123,0.146,0.166,0.139,0.14,0.134,0.136,0.152,0.179,0.209,0.273,0.308,0.35,0.382,0.42,0.49,0.537,0.541,0.59,0.68,0.737,0.834,0.976,1.118,1.244,1.385,1.491,1.682,1.893,1.989,1.963,1.971,1.953,1.915,1.857,1.754,1.632,1.408,1.061,0.895,0.619,0.36,0.18,0.071,0.039],[0.123,0.146,0.166,0.139,0.14,0.134,0.136,0.152,0.179,0.209,0.275,0.309,0.35,0.382,0.419,0.489,0.537,0.542,0.584,0.661,0.714,0.807,0.936,1.053,1.187,1.33,1.474,1.41,1.499,1.686,1.888,1.981,1.963,1.968,1.947,1.915,1.854,1.749,1.632,1.408,1.061,0.895,0.619,0.36,0.18,0.071]],"ev_curve":[0.406,0.387,0.366,0.356,0.329,0.321,0.354,0.314,0.326,0.326,0.277,0.232,0.199,0.167,0.164,0.148,0.152,0.149,0.166,0.155,0.168,0.191,0.211,0.244,0.265,0.252,0.249,0.234,0.217,0.215,0.207,0.199,0.196,0.203,0.212,0.225,0.253,0.299,0.37,0.461,0.573,0.707,0.822,0.913,0.957,1.041,1.106,1.129,1.235,1.196,1.194,1.194],"count_rv":{"0-0":{"ball":0.03548,"bip":0.05564,"called_strike":-0.04133,"foul":-0.04123,"hbp":0.34575,"whiff":-0.04161},"0-1":{"ball":0.02732,"bip":0.06876,"called_strike":-0.05635,"foul":-0.05648,"hbp":0.3929,"whiff":-0.0568},"0-2":{"ball":0.02074,"bip":0.10901,"called_strike":-0.16826,"foul":0.0,"hbp":0.44989,"whiff":-0.16789},"1-0":{"ball":0.06012,"bip":0.02557,"called_strike":-0.05006,"foul":-0.04972,"hbp":0.30491,"whiff":-0.04988},"1-1":{"ball":0.04907,"bip":0.05639,"called_strike":-0.06371,"foul":-0.06373,"hbp":0.35731,"whiff":-0.06397},"1-2":{"ball":0.03986,"bip":0.09685,"called_strike":-0.18948,"foul":0.0,"hbp":0.43226,"whiff":-0.18882},"2-0":{"ball":0.1122,"bip":-0.01848,"called_strike":-0.06176,"foul":-0.06137,"hbp":0.23587,"whiff":-0.06066},"2-1":{"ball":0.10523,"bip":0.01896,"called_strike":-0.07374,"foul":-0.07361,"hbp":0.29608,"whiff":-0.07421},"2-2":{"ball":0.09575,"bip":0.06545,"called_strike":-0.22983,"foul":0.0,"hbp":0.38433,"whiff":-0.22935},"3-0":{"ball":0.13033,"bip":-0.02098,"called_strike":-0.0695,"foul":-0.06386,"hbp":0.12978,"whiff":-0.06334},"3-1":{"ball":0.19851,"bip":-0.06111,"called_strike":-0.08449,"foul":-0.08473,"hbp":0.20116,"whiff":-0.08418},"3-2":{"ball":0.28654,"bip":-0.00254,"called_strike":-0.32627,"foul":0.0,"hbp":0.283,"whiff":-0.32471}},"count_ctx":{"0-0":{"zone":0.5326,"swing":0.3086,"n":912204},"0-1":{"zone":0.4493,"swing":0.488,"n":460709},"0-2":{"zone":0.3252,"swing":0.5101,"n":242002},"1-0":{"zone":0.5461,"swing":0.4265,"n":348035},"1-1":{"zone":0.4961,"swing":0.5415,"n":358460},"1-2":{"zone":0.3798,"swing":0.5753,"n":346982},"2-0":{"zone":0.583,"swing":0.4234,"n":117448},"2-1":{"zone":0.5576,"swing":0.5777,"n":184525},"2-2":{"zone":0.466,"swing":0.6453,"n":295279},"3-0":{"zone":0.6204,"swing":0.0992,"n":36214},"3-1":{"zone":0.6114,"swing":0.5434,"n":76367},"3-2":{"zone":0.5777,"swing":0.7068,"n":178018}},"n_bip":614458};
+</script>
+<script>
+/* ============================================================
+   METRICS -- pure functions over arrays of pitch objects.
+   No DOM, no storage, no globals beyond the lookup tables.
+   These are the functions to port verbatim if this app ever
+   moves to a server.
+   ============================================================ */
+
+/* ---------- expected wOBA from contact quality ---------- */
+
+// Exit velo + launch angle -> expected wOBA, from the embedded MLB grid.
+function xwobaFor(ev, la){
+  if(ev==null || !isFinite(ev)) return null;
+  const L = LOOKUPS;
+  const i = clamp(Math.round((ev - L.ev.lo)/L.ev.step), 0, L.ev.n-1);
+  if(la==null || !isFinite(la)){
+    const v = L.ev_curve[i];
+    return v==null ? null : v;
+  }
+  const j = clamp(Math.round((la - L.la.lo)/L.la.step), 0, L.la.n-1);
+  const v = L.grid[i][j];
+  return v==null ? null : v;
+}
+
+/* ---------- count helpers ---------- */
+
+const COUNT_GROUPS = {
+  all:      {label:'All counts', test:()=>true},
+  first:    {label:'First pitch', test:p=>p.balls===0&&p.strikes===0},
+  even:     {label:'Even',        test:p=>p.balls===p.strikes},
+  ahead:    {label:'Hitter ahead',test:p=>p.balls>p.strikes},
+  behind:   {label:'Hitter behind',test:p=>p.balls<p.strikes},
+  two_k:    {label:'2 strikes',   test:p=>p.strikes===2},
+  three_b:  {label:'3 balls',     test:p=>p.balls===3},
+};
+const countKey = p => p.balls+'-'+p.strikes;
+
+/* ---------- filtering ---------- */
+
+function filterPitches(pitches, f){
+  return pitches.filter(p=>{
+    if(f.gameType!=='both' && p.gameType!==f.gameType) return false;
+    if(f.pt!=='all' && p.pitchType!==f.pt) return false;
+    if(f.hand!=='all' && p.pitcherHand!==f.hand) return false;
+    if(f.gameId && p.gameId!==f.gameId) return false;
+    if(f.from && p.date < f.from) return false;
+    if(f.to   && p.date > f.to) return false;
+    if(f.count!=='all'){
+      const g = COUNT_GROUPS[f.count];
+      if(g){ if(!g.test(p)) return false; }
+      else if(countKey(p)!==f.count) return false;
+    }
+    return true;
+  });
+}
+
+/* ---------- plate appearances ----------
+   Scorebook attribution: pitch-level events (swings, chases, the
+   heat map) belong to whoever saw that pitch. The PA outcome
+   belongs to whoever was in the box when it ended. That is what
+   makes a mid-PA pinch hitter come out right. */
+function derivePAs(pitches){
+  const by = new Map();
+  for(const p of pitches){
+    const k = p.gameId+'#'+p.paSeq;
+    if(!by.has(k)) by.set(k, []);
+    by.get(k).push(p);
+  }
+  const out = [];
+  for(const [k,ps] of by){
+    ps.sort((a,b)=>a.seq-b.seq);
+    const last = ps[ps.length-1];
+    let outcome = null;
+    if(last.decision==='in_play') outcome = last.result;
+    else if(last.decision==='hbp') outcome = 'HBP';
+    else{
+      const after = advanceCount(last);
+      if(after.balls>=4) outcome = 'BB';
+      else if(after.strikes>=3) outcome = 'K';
+    }
+    out.push({
+      key:k, gameId:last.gameId, paSeq:last.paSeq, date:last.date,
+      gameType:last.gameType, athleteId:last.athleteId, outcome,
+      complete:outcome!=null, pitches:ps, last,
+    });
+  }
+  return out.sort((a,b)=> (a.date<b.date?-1:a.date>b.date?1:0) || a.paSeq-b.paSeq);
+}
+
+// Count AFTER this pitch. The zone tap decides ball vs called strike.
+function advanceCount(p){
+  let b = p.balls, s = p.strikes;
+  if(p.decision==='taken'){ if(p.inZone) s++; else b++; }
+  else if(p.decision==='swing_miss') s++;
+  else if(p.decision==='foul'){ if(s<2) s++; }
+  return {balls:b, strikes:s};
+}
+
+/* ---------- run value of the decision ----------
+   Credits the DECISION, not the outcome: every ball in play in a
+   given count is scored the same, because the hitter controls
+   whether to swing and not where the ball lands. */
+function pitchRV(p){
+  const t = LOOKUPS.count_rv[countKey(p)];
+  if(!t) return null;
+  if(p.decision==='in_play') return t.bip;
+  if(p.decision==='hbp')     return t.hbp!=null ? t.hbp : t.ball;
+  if(p.decision==='swing_miss') return t.whiff;
+  if(p.decision==='foul')       return t.foul;
+  return p.inZone ? t.called_strike : t.ball;   // taken
+}
+
+/* ---------- the stat line ---------- */
+function computeStats(pitches, athleteId){
+  const pas = derivePAs(pitches).filter(pa=> pa.complete && (!athleteId || pa.athleteId===athleteId));
+  const c = {PA:pas.length, BB:0, K:0, HBP:0, SF:0, SAC:0, AB:0, H:0, TB:0,
+             '1B':0,'2B':0,'3B':0,HR:0};
+  for(const pa of pas){
+    const o = pa.outcome;
+    if(o==='BB'){ c.BB++; continue; }
+    if(o==='HBP'){ c.HBP++; continue; }
+    if(o==='SF'){ c.SF++; continue; }
+    if(o==='SAC'){ c.SAC++; continue; }
+    if(o==='K'){ c.K++; c.AB++; continue; }
+    const r = RES[o];
+    if(!r) continue;
+    c.AB++;
+    if(r.hit){ c.H++; c.TB += r.bases; c[o]++; }
+  }
+  const wobaDen = c.AB + c.BB + c.SF + c.HBP;
+  const wobaNum = WOBA_W.uBB*c.BB + WOBA_W.HBP*c.HBP + WOBA_W['1B']*c['1B']
+                + WOBA_W['2B']*c['2B'] + WOBA_W['3B']*c['3B'] + WOBA_W.HR*c.HR;
+
+  // Expected wOBA: batted balls with an exit velo entered, plus the
+  // walks/strikeouts/HBP that need no measurement. Coverage is reported
+  // so a partly-tagged sample is never read as a complete one.
+  let xNum = WOBA_W.uBB*c.BB + WOBA_W.HBP*c.HBP, xDen = c.BB + c.HBP + c.K, bipTot = 0, bipTag = 0;
+  for(const pa of pas){
+    const o = pa.outcome;
+    if(o==='BB'||o==='HBP'||o==='K') continue;
+    bipTot++;
+    const ev = pa.last.ev, la = pa.last.la;
+    const x = xwobaFor(ev, la);
+    if(x!=null){ bipTag++; xNum += x; xDen++; }
+  }
+
+  const d = discipline(pitches);
+  const denomAB = c.AB || 1;
+  return {
+    ...c,
+    AVG: c.AB ? c.H/c.AB : null,
+    OBP: (c.AB+c.BB+c.HBP+c.SF) ? (c.H+c.BB+c.HBP)/(c.AB+c.BB+c.HBP+c.SF) : null,
+    SLG: c.AB ? c.TB/c.AB : null,
+    OPS: null,  // filled below
+    ISO: c.AB ? (c.TB-c.H)/c.AB : null,
+    BABIP: (c.AB-c.K-c.HR+c.SF) > 0 ? (c.H-c.HR)/(c.AB-c.K-c.HR+c.SF) : null,
+    Kpct: c.PA ? c.K/c.PA : null,
+    BBpct: c.PA ? c.BB/c.PA : null,
+    wOBA: wobaDen ? wobaNum/wobaDen : null,
+    xwOBA: (xDen && bipTag) ? xNum/xDen : null,
+    bipTot, bipTag,
+    ...d,
+  };
+}
+function withOPS(s){ s.OPS = (s.OBP!=null&&s.SLG!=null) ? s.OBP+s.SLG : null; return s; }
+
+/* ---------- plate discipline + decision runs ---------- */
+function discipline(pitches){
+  let n=0, sw=0, iz=0, izSw=0, oz=0, ozSw=0, whiff=0, contact=0, fp=0, fpSw=0,
+      rvSum=0, rvN=0, bip=0, evSum=0, evN=0, xSum=0, xN=0;
+  for(const p of pitches){
+    n++;
+    const swung = p.decision!=='taken' && p.decision!=='hbp';
+    if(swung) sw++;
+    if(p.inZone){ iz++; if(swung) izSw++; } else { oz++; if(swung) ozSw++; }
+    if(p.decision==='swing_miss') whiff++;
+    if(p.decision==='foul'||p.decision==='in_play') contact++;
+    if(p.balls===0&&p.strikes===0){ fp++; if(swung) fpSw++; }
+    const rv = pitchRV(p);
+    if(rv!=null){ rvSum+=rv; rvN++; }
+    if(p.decision==='in_play'){
+      bip++;
+      if(p.ev!=null&&isFinite(p.ev)){ evSum+=p.ev; evN++; }
+      const x = xwobaFor(p.ev, p.la);
+      if(x!=null){ xSum+=x; xN++; }
+    }
+  }
+  return {
+    pitches:n,
+    Swing: n?sw/n:null,
+    ZSwing: iz?izSw/iz:null,
+    Chase: oz?ozSw/oz:null,
+    Whiff: sw?whiff/sw:null,
+    Contact: sw?contact/sw:null,
+    SwStr: n?whiff/n:null,
+    ZTake: iz?(iz-izSw)/iz:null,
+    FPSwing: fp?fpSw/fp:null,
+    ZoneSeen: n?iz/n:null,
+    DecRuns: rvN? rvSum/rvN*100 : null,   // runs per 100 pitches seen
+    BIP: bip,
+    EV: evN?evSum/evN:null,
+    xwOBAcon: xN?xSum/xN:null,
+  };
+}
+
+/* ---------- heat map ----------
+   A single hitter's season lands a few hundred pitches on 169
+   cells, so raw counts would be noise. Numerator and denominator
+   are each smoothed with a small Gaussian kernel and then
+   divided -- the correct order for a rate. Cells whose smoothed
+   sample is still too thin are hatched instead of colored, so a
+   one-pitch cell never reads as a hot zone. */
+const HM_METRICS = {
+  density: {label:'Pitch density', type:'seq', minN:0,
+    tip:'Where the pitches went. Darker gold means this hitter sees more pitches there. Read it to find what a pitcher is willing to throw them.',
+    num:p=>1, den:p=>1, fmt:v=>(v*100).toFixed(1)+'%', share:true},
+  swing:   {label:'Swing rate', type:'div', mid:null, minN:2.5,
+    tip:'How often the hitter swings at pitches in each spot. Compare the zone (inside the white box) to outside it -- gold outside the box is chasing.',
+    num:p=>(p.decision!=='taken'&&p.decision!=='hbp')?1:0, den:p=>1, fmt:v=>(v*100).toFixed(0)+'%'},
+  whiff:   {label:'Miss rate', type:'seq', minN:2,
+    tip:'Of the swings taken in each spot, how many missed entirely. Gold is where this hitter is beaten.',
+    num:p=>p.decision==='swing_miss'?1:0,
+    den:p=>(p.decision!=='taken'&&p.decision!=='hbp')?1:0, fmt:v=>(v*100).toFixed(0)+'%'},
+  ev:      {label:'Exit velo', type:'seq', minN:1.5,
+    tip:'Average exit velocity on balls hit from each spot -- only where an exit velo was entered. Gold is where this hitter does damage.',
+    num:p=>(p.decision==='in_play'&&p.ev!=null)?p.ev:0,
+    den:p=>(p.decision==='in_play'&&p.ev!=null)?1:0, fmt:v=>v.toFixed(0)+' mph'},
+  damage:  {label:'Expected damage', type:'seq', minN:1.5,
+    tip:'Expected wOBA on contact from each spot, from exit velo and launch angle. Needs exit velo entered. Gold is where contact turns into runs.',
+    num:p=>{const x=(p.decision==='in_play')?xwobaFor(p.ev,p.la):null; return x==null?0:x;},
+    den:p=>(p.decision==='in_play'&&xwobaFor(p.ev,p.la)!=null)?1:0, fmt:v=>v.toFixed(3).replace(/^0/,'')},
+  decruns: {label:'Decision runs', type:'div', mid:0, minN:2.5,
+    tip:'Runs gained or lost per 100 pitches by the swing-or-take decision in each spot. Taking a ball is a gain, taking a strike or chasing is a loss. Credits the decision, not the result.',
+    num:p=>{const rv=pitchRV(p); return rv==null?0:rv*100;},
+    den:p=>pitchRV(p)==null?0:1, fmt:v=>(v>0?'+':'')+v.toFixed(1)},
+};
+
+const KERNEL = (()=>{
+  const sigma = 1.15, rad = 2, k = [];
+  for(let dr=-rad; dr<=rad; dr++) for(let dc=-rad; dc<=rad; dc++)
+    k.push([dr, dc, Math.exp(-(dr*dr+dc*dc)/(2*sigma*sigma))]);
+  return k;
+})();
+
+function heatGrid(pitches, metricKey){
+  const M = HM_METRICS[metricKey];
+  const rawNum = Array.from({length:GRID},()=>new Array(GRID).fill(0));
+  const rawDen = Array.from({length:GRID},()=>new Array(GRID).fill(0));
+  const rawCnt = Array.from({length:GRID},()=>new Array(GRID).fill(0));
+  for(const p of pitches){
+    const r = p.zoneRow, c = p.zoneCol;
+    if(r==null||c==null||r<0||r>=GRID||c<0||c>=GRID) continue;
+    rawNum[r][c] += M.num(p);
+    rawDen[r][c] += M.den(p);
+    rawCnt[r][c] += 1;
+  }
+  const cells = [];
+  let lo = Infinity, hi = -Infinity;
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++){
+    let sn=0, sd=0, sc=0;
+    for(const [dr,dc,w] of KERNEL){
+      const rr=r+dr, cc=c+dc;
+      if(rr<0||rr>=GRID||cc<0||cc>=GRID) continue;
+      sn += rawNum[rr][cc]*w; sd += rawDen[rr][cc]*w; sc += rawCnt[rr][cc]*w;
+    }
+    let v = null;
+    if(M.share){ v = sc; }
+    else if(sd > 0) { v = sn/sd; }
+    const thin = M.share ? sc < 0.8 : sd < M.minN;
+    if(v!=null && !thin){ lo=Math.min(lo,v); hi=Math.max(hi,v); }
+    cells.push({r, c, v, thin, n:rawCnt[r][c], eff:M.share?sc:sd, inZone:inZone(r,c)});
+  }
+  if(M.share && hi>0){ for(const cell of cells){ if(cell.v!=null) cell.v = cell.v/ (hi||1); } lo=0; hi=1; }
+  return {cells, lo:isFinite(lo)?lo:0, hi:isFinite(hi)?hi:1, metric:M, total:pitches.length};
+}
+
+/* Heat colors stay inside the team palette: cool navy for cold,
+   gold for hot, with a genuinely neutral slate midpoint so
+   "average" does not read as either good or bad. */
+function heatColor(v, g){
+  if(v==null) return 'var(--navy-850)';
+  const M = g.metric;
+  let t;
+  if(M.type==='div'){
+    const mid = M.mid!=null ? M.mid : (g.lo+g.hi)/2;
+    const span = Math.max(Math.abs(g.hi-mid), Math.abs(mid-g.lo)) || 1;
+    t = clamp((v-mid)/span, -1, 1)*0.5 + 0.5;
+  }else{
+    t = g.hi>g.lo ? (v-g.lo)/(g.hi-g.lo) : 0.5;
+  }
+  return rampColor(clamp(t,0,1));
+}
+const RAMP = [[15,30,61],[27,47,88],[46,66,117],[110,124,153],[200,133,14],[249,168,26],[251,197,94],[255,236,196]];
+function rampColor(t){
+  const x = t*(RAMP.length-1), i = Math.floor(x), f = x-i;
+  const a = RAMP[i], b = RAMP[Math.min(i+1,RAMP.length-1)];
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;
+}
+const RAMP_CSS = 'linear-gradient(to right,'+RAMP.map(c=>`rgb(${c[0]},${c[1]},${c[2]})`).join(',')+')';
+</script>
+<script>
+/* ============================================================
+   VIEWS -- rendering and interaction.
+   All state changes go through the action map at the bottom, so
+   every re-render rebuilds from S and nothing drifts.
+   ============================================================ */
+
+const TABS = [
+  {id:'live',   label:'Live Game'},
+  {id:'hitter', label:'Hitters'},
+  {id:'team',   label:'Team'},
+  {id:'games',  label:'Games'},
+  {id:'roster', label:'Roster'},
+  {id:'export', label:'Export'},
+];
+function renderTabs(){
+  $('#tabs').innerHTML = TABS.map(t=>
+    `<button data-act="tab" data-id="${t.id}"${S.tab===t.id?' aria-current="page"':''}>${t.label}</button>`
+  ).join('');
+}
+function render(){
+  const v = $('#view');
+  // A gate replaces the whole app: there is nothing useful to show behind it.
+  if(S.gate){
+    $('#tabs').innerHTML = '';
+    v.innerHTML = S.gate==='setup' ? setupGate() : signinGate();
+    setSync();
+    return;
+  }
+  renderTabs();
+  const fns = {live:viewLive, hitter:viewHitter, team:viewTeam, games:viewGames, roster:viewRoster, export:viewExport};
+  v.innerHTML = (fns[S.tab]||viewLive)();
+  setSync();
+}
+
+/* ---------- first-run setup (hosted deployment only) ---------- */
+function setupGate(){
+  return `<div class="col" style="max-width:620px;margin:0 auto">
+    <div class="panel">
+      <header><h2>Connect the database</h2></header>
+      <p class="note" style="margin:0 0 14px">This copy stores every game in your own Supabase
+        project, so your whole staff sees the same roster and the same data from any device.
+        You only do this once per device. Both values live in your Supabase dashboard under
+        <b>Project Settings</b> -- the URL under <b>Data API</b>, the key under
+        <b>API Keys</b> (older dashboards put both on one <b>API</b> page).</p>
+      <div class="col" style="gap:10px">
+        <label class="field"><span>Project URL</span>
+          <input type="url" id="sb-url" placeholder="https://abcdefgh.supabase.co"></label>
+        <label class="field"><span>Anon public key <span class="mut">(newer projects call it "publishable")</span></span>
+          <input type="text" id="sb-key" placeholder="eyJhbGciOi...  or  sb_publishable_..."></label>
+      </div>
+      ${S.gateError?`<div class="warnbar" style="margin-top:12px">${esc(S.gateError)}</div>`:''}
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" data-act="sb-save">Connect</button>
+        <button class="btn ghost" data-act="sb-skip">Use this device only</button>
+      </div>
+      <p class="note" style="margin:12px 0 0">The anon / publishable key is safe to put in a page
+        -- it is public by design. What protects your data is the coaches list in the database:
+        only the email addresses you add there can read or write anything. Never paste the
+        <b>secret</b> or <b>service_role</b> key here; that one ignores those rules.</p>
+    </div>
+  </div>`;
+}
+
+/* ---------- sign in ---------- */
+function signinGate(){
+  const st = S.signin || (S.signin = {email:'', sent:false, code:''});
+  return `<div class="col" style="max-width:520px;margin:0 auto">
+    <div class="panel">
+      <header><h2>Coach sign-in</h2></header>
+      ${!st.sent?`
+        <p class="note" style="margin:0 0 14px">Enter your email and we will send you a
+          sign-in link. No password to remember.</p>
+        <label class="field"><span>Email</span>
+          <input type="email" id="si-email" value="${esc(st.email)}" placeholder="you@mountmarty.edu"></label>
+        ${S.gateError?`<div class="warnbar" style="margin-top:12px">${esc(S.gateError)}</div>`:''}
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" data-act="si-send">Email me a link</button>
+        </div>
+      `:`
+        <p style="margin:0 0 6px;font-size:15px"><b>Check your email.</b></p>
+        <p class="note" style="margin:0 0 14px">We sent a sign-in link to
+          <b>${esc(st.email)}</b>. Open it <b>on this device</b> and you will land back
+          here signed in. It expires in an hour.</p>
+        ${S.gateError?`<div class="warnbar" style="margin-bottom:12px">${esc(S.gateError)}</div>`:''}
+        <div class="row">
+          <button class="btn ghost" data-act="si-send">Send it again</button>
+          <button class="btn ghost" data-act="si-back">Use a different email</button>
+        </div>
+        <details style="margin-top:16px">
+          <summary style="cursor:pointer;font-size:12px;color:var(--slate-500)">My email has a 6-digit code instead of a link</summary>
+          <div style="margin-top:10px">
+            <label class="field" style="max-width:220px"><span>Code</span>
+              <input type="text" id="si-code" inputmode="numeric" autocomplete="one-time-code"
+                placeholder="123456" style="font-family:var(--f-mono);font-size:18px;letter-spacing:.2em"></label>
+            <div class="row" style="margin-top:10px">
+              <button class="btn" data-act="si-verify">Sign in with code</button>
+            </div>
+          </div>
+        </details>
+      `}
+      <p class="note" style="margin:14px 0 0">Only emails on the coaches list can get in. If yours
+        is rejected, ask whoever set this up to add you.</p>
+    </div>
+  </div>`;
+}
+
+/* ---------- lookups into state ---------- */
+const athlete = id => S.athletes.find(a=>a.id===id);
+const aName = id => { const a = athlete(id); return a ? a.name : 'Unknown'; };
+const game = id => S.games.find(g=>g.id===id);
+const gamePitches = gid => S.pitches.filter(p=>p.gameId===gid);
+const occupant = (g, L, slot) => occupantOf(g, L, slot);
+
+/* ---------- derived live state (nothing is stored that can drift) ---------- */
+function liveState(g){
+  const ps = gamePitches(g.id).slice().sort((a,b)=>a.seq-b.seq);
+  const per = {};
+  for(const L of ['A','B']){
+    const lp = ps.filter(p=>p.lineup===L);
+    const pas = derivePAs(lp);
+    const done = pas.filter(pa=>pa.complete).length;
+    const open = pas.find(pa=>!pa.complete) || null;
+    per[L] = {
+      pitches:lp, pas, batterIdx: done % 9, open,
+      count: open ? advanceCount(open.pitches[open.pitches.length-1]) : {balls:0, strikes:0},
+    };
+  }
+  return {
+    ps, per,
+    nextSeq: ps.length ? ps[ps.length-1].seq + 1 : 1,
+    nextPA:  ps.length ? Math.max(...ps.map(p=>p.paSeq)) + 1 : 1,
+  };
+}
+
+/* ============================================================
+   LIVE GAME
+   ============================================================ */
+function viewLive(){
+  const g = game(S.liveGameId);
+  if(!g || g.status!=='live') return liveSetup();
+  return trackScreen(g);
+}
+
+function liveSetup(){
+  const recent = S.games.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'')).slice(0,6);
+  if(!S.athletes.length){
+    return `<div class="col">
+      <div class="panel"><header><h2>Start a game</h2></header>
+        <p class="note">Add your hitters to the roster first -- you set the lineup from that list.</p>
+        <div class="row"><button class="btn primary" data-act="tab" data-id="roster">Go to roster</button></div>
+      </div></div>`;
+  }
+  const setup = S.setup || (S.setup = {
+    date: todayISO(), opponent:'', gameType:'game', lineupMode:'single',
+    lineups:{A:new Array(9).fill(''), B:new Array(9).fill('')},
+  });
+  const opts = sel => `<option value="">-- empty --</option>` + S.athletes
+    .filter(a=>a.active!==false)
+    .map(a=>`<option value="${a.id}"${sel===a.id?' selected':''}>${esc(a.name)}${a.number?' #'+esc(a.number):''} (${esc(a.bats||'R')})</option>`).join('');
+  const lineupCol = L => `
+    <div class="panel">
+      <header><h3>Lineup ${L}${L==='B'?' -- other side':''}</h3>
+      <span class="sub">${setup.lineups[L].filter(Boolean).length}/9 set</span></header>
+      <div class="lineup">${setup.lineups[L].map((id,i)=>`
+        <div class="lu"><span class="s">${i+1}</span>
+          <select data-act="setup-slot" data-l="${L}" data-i="${i}">${opts(id)}</select>
+          <span class="mv">
+            <button data-act="setup-move" data-l="${L}" data-i="${i}" data-d="-1" title="Move up" aria-label="Move slot ${i+1} up">&uarr;</button>
+            <button data-act="setup-move" data-l="${L}" data-i="${i}" data-d="1" title="Move down" aria-label="Move slot ${i+1} down">&darr;</button>
+          </span>
+        </div>`).join('')}</div>
+    </div>`;
+  const ready = setup.lineups.A.filter(Boolean).length>0 &&
+    (setup.lineupMode==='single' || setup.lineups.B.filter(Boolean).length>0);
+
+  return `<div class="col">
+    <div class="panel">
+      <header><h2>Start a game</h2>
+        <span class="sub">tap a zone, a pitch type, and what happened</span></header>
+      <div class="row" style="align-items:flex-end;gap:14px">
+        <label class="field"><span>Date</span>
+          <input type="date" id="su-date" value="${esc(setup.date)}" data-act="setup-field" data-k="date"></label>
+        <label class="field" style="flex:1;min-width:190px"><span>Opponent</span>
+          <input type="text" id="su-opp" value="${esc(setup.opponent)}" placeholder="e.g. Doane" data-act="setup-field" data-k="opponent"></label>
+        <div class="field"><span>Counts as ${help('A real game or a scrimmage. Hitter pages show games only by default, so fall scrimmage work never muddies a spring stat line. You can always switch a page to scrimmages or both.')}</span>
+          <div class="seg">
+            <button data-act="setup-field" data-k="gameType" data-v="game" aria-pressed="${setup.gameType==='game'}">Game</button>
+            <button data-act="setup-field" data-k="gameType" data-v="scrimmage" aria-pressed="${setup.gameType==='scrimmage'}">Scrimmage</button>
+          </div>
+        </div>
+        <div class="field"><span>Lineups ${help('Two lineups is for an intrasquad, where you are charting both sides at once. It is separate from game-versus-scrimmage: an intrasquad in February can still be marked a scrimmage.')}</span>
+          <div class="seg">
+            <button data-act="setup-field" data-k="lineupMode" data-v="single" aria-pressed="${setup.lineupMode==='single'}">One</button>
+            <button data-act="setup-field" data-k="lineupMode" data-v="dual" aria-pressed="${setup.lineupMode==='dual'}">Two</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">${lineupCol('A')}${setup.lineupMode==='dual'?lineupCol('B'):''}</div>
+    <div class="row">
+      <button class="btn primary" data-act="start-game"${ready?'':' disabled'}>Start tracking</button>
+      <span class="note">${ready?'':'Set at least one hitter in every active lineup.'}</span>
+    </div>
+    ${recent.length?`<div class="panel"><header><h3>Recent games</h3></header>
+      <div class="tw"><table><thead><tr><th>Date</th><th>Opponent</th><th>Type</th><th>Pitches</th><th>PA</th><th></th></tr></thead>
+      <tbody>${recent.map(x=>{
+        const n = gamePitches(x.id).length;
+        return `<tr class="clickable" data-act="open-report" data-id="${x.id}">
+          <td>${fmtDate(x.date)}</td><td>${esc(x.opponent||'--')}</td>
+          <td><span class="pill ${x.gameType==='scrimmage'?'type-scrimmage':'gold'}">${x.gameType}</span>
+            ${x.status==='live'?'<span class="pill live">live</span>':''}</td>
+          <td class="n">${n}</td><td class="n">${derivePAs(gamePitches(x.id)).filter(p=>p.complete).length}</td>
+          <td style="text-align:right"><span class="mut">report &rarr;</span></td></tr>`;
+      }).join('')}</tbody></table></div></div>`:''}
+  </div>`;
+}
+
+/* ---------- the tracking screen ---------- */
+function trackScreen(g){
+  const st = liveState(g);
+  const L = S.activeLineup;
+  const cur = st.per[L];
+  const slot = cur.batterIdx;
+  const batter = occupant(g, L, slot);
+  const c = cur.count;
+  const pend = S.pending;
+  const step = !pend.zone ? 1 : (!pend.pt ? 2 : 3);
+
+  const paPitches = cur.open ? cur.open.pitches : [];
+  const seen = batter ? cur.pitches.filter(p=>p.athleteId===batter) : [];
+
+  return `<div class="col">
+    <div class="trackbar">
+      <div class="batter">
+        <span class="slot">${slot+1}</span>
+        <span>
+          <span class="nm">${esc(batter?aName(batter):'empty slot')}</span>
+          <span class="meta">${batter?(athlete(batter)?.bats||'R')+'HH':''} &middot; ${seen.length} pitches today &middot; PA ${cur.pas.filter(p=>p.complete&&p.athleteId===batter).length+1}</span>
+        </span>
+      </div>
+      <span class="count">${c.balls}-${c.strikes}<small>count</small></span>
+      <div class="steps">
+        <span class="s ${step>1?'done':(step===1?'now':'')}">1 zone</span>
+        <span class="s ${step>2?'done':(step===2?'now':'')}">2 pitch</span>
+        <span class="s ${step===3?'now':''}">3 result</span>
+      </div>
+      ${g.lineupMode==='dual'?`<div class="seg">
+        <button data-act="set-lineup" data-l="A" aria-pressed="${L==='A'}">Side A</button>
+        <button data-act="set-lineup" data-l="B" aria-pressed="${L==='B'}">Side B</button>
+      </div>`:''}
+      <div class="row tight" style="margin-left:auto">
+        <button class="btn ghost sm" data-act="sub-open">Sub</button>
+        <button class="btn ghost sm" data-act="undo"${st.ps.length?'':' disabled'}>Undo</button>
+        <button class="btn danger sm" data-act="end-game">End game</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <header><h3>Where was it?</h3>
+          <span class="sub">${esc(g.opponent||'--')} &middot; ${g.gameType} &middot; ${fmtDate(g.date)}</span></header>
+        ${zoneGridHTML(pend.zone)}
+        <p class="note" style="margin:10px 0 0">The white box is the strike zone. A taken pitch inside it is a strike, outside it a ball -- you never enter the count.</p>
+      </div>
+
+      <div class="col">
+        <div class="panel">
+          <header><h3>Pitch type</h3></header>
+          <div class="pgrid">${PITCH_TYPES.map(p=>
+            `<button data-act="pick-pt" data-v="${p.code}" class="${pend.pt===p.code?'sel':''}"${pend.zone?'':' disabled'}>
+              ${p.label}<small>${esc(p.name.split(' /')[0])}</small></button>`).join('')}</div>
+          <div class="row" style="margin-top:11px">
+            <div class="field"><span>Pitcher throws</span>
+              <div class="seg">
+                ${['R','L'].map(h=>`<button data-act="set-hand" data-v="${h}" aria-pressed="${(S.hand||'R')===h}">${h}HP</button>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <header><h3>What happened?</h3></header>
+          <div class="pgrid">${DECISIONS.map(d=>
+            `<button data-act="pick-dec" data-v="${d.code}"${(pend.zone&&pend.pt)?'':' disabled'}>
+              ${d.label}<small>${esc(d.hint)}</small></button>`).join('')}</div>
+        </div>
+        <div class="panel">
+          <header><h3>This at-bat</h3><span class="sub">${paPitches.length} pitch${paPitches.length===1?'':'es'}</span></header>
+          ${paPitches.length?`<div class="seqlog">${paPitches.map((p,i)=>{
+            const a = advanceCount(p);
+            const cls = p.decision==='in_play'?'bip':(p.decision!=='taken'?'sw':'');
+            return `<span class="p ${cls}">${i+1} ${p.pitchType} ${decShort(p)} ${a.balls}-${a.strikes}</span>`;
+          }).join('')}</div>`:`<p class="note" style="margin:0">First pitch of the at-bat.</p>`}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function decShort(p){
+  if(p.decision==='taken') return p.inZone?'called K':'ball';
+  if(p.decision==='swing_miss') return 'whiff';
+  if(p.decision==='foul') return 'foul';
+  if(p.decision==='hbp') return 'HBP';
+  return p.result||'in play';
+}
+
+function zoneGridHTML(sel){
+  const cells = [];
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++){
+    const iz = inZone(r,c);
+    const on = sel && sel.r===r && sel.c===c;
+    cells.push(`<button data-act="pick-zone" data-r="${r}" data-c="${c}"
+      class="${iz?'iz':''}${on?' sel':''}" aria-label="row ${r+1} column ${c+1}${iz?' in zone':''}"></button>`);
+  }
+  // The strike zone outline sits on the inner 7x7 of a 13x13 grid.
+  const p = 10, w = 'calc(100% - 20px)';
+  const lo = IZ_LO/GRID*100, hi = (IZ_HI+1)/GRID*100;
+  return `<div class="zonewrap">
+    <div class="zone">${cells.join('')}</div>
+    <div class="szbox" style="left:calc(${p}px + ${w} * ${lo/100});top:calc(${p}px + ${w} * ${lo/100});
+      width:calc(${w} * ${(hi-lo)/100});height:calc(${w} * ${(hi-lo)/100})">${SZ9}</div>
+  </div>`;
+}
+
+/* ---------- in-play modal ---------- */
+function inPlayModal(){
+  const d = S.bip || (S.bip = {result:'', x:null, y:null, ev:'', la:'', dist:''});
+  return modalHTML(`Ball in play`, `
+    <div class="grid2">
+      <div>
+        <h4 style="margin-bottom:8px">Where did it go?</h4>
+        ${fieldHTML([d.x!=null?{x:d.x,y:d.y,hit:true}:null].filter(Boolean), true)}
+        <p class="note" style="margin-top:8px">Tap the field. Optional -- you can save without it.</p>
+      </div>
+      <div class="col" style="gap:12px">
+        <div>
+          <h4 style="margin-bottom:8px">Result</h4>
+          <div class="pgrid">${RESULTS.map(r=>
+            `<button data-act="bip-res" data-v="${r.code}" class="${d.result===r.code?'sel':''}">${r.code}<small>${esc(r.label)}</small></button>`).join('')}</div>
+        </div>
+        <div>
+          <h4 style="margin-bottom:8px">Measurements ${help('All three are optional. Exit velocity is the one that matters most -- it unlocks expected damage and xwOBA for this ball. Launch angle sharpens it further. Anything left blank is simply excluded, never guessed.')}</h4>
+          <div class="row">
+            <label class="field" style="width:118px"><span>Exit velo (mph)</span>
+              <input type="number" inputmode="decimal" step="0.1" id="bip-ev" value="${esc(d.ev)}" data-act="bip-num" data-k="ev" placeholder="--"></label>
+            <label class="field" style="width:118px"><span>Launch angle</span>
+              <input type="number" inputmode="decimal" step="1" id="bip-la" value="${esc(d.la)}" data-act="bip-num" data-k="la" placeholder="--"></label>
+            <label class="field" style="width:118px"><span>Distance (ft)</span>
+              <input type="number" inputmode="decimal" step="1" id="bip-dist" value="${esc(d.dist)}" data-act="bip-num" data-k="dist" placeholder="--"></label>
+          </div>
+          <p class="note" style="margin-top:8px">Expected wOBA on this ball:
+            <b class="num" id="bip-xw" style="color:var(--gold-500)">${(()=>{
+              const ev = parseFloat(d.ev), la = parseFloat(d.la);
+              const x = isFinite(ev) ? xwobaFor(ev, isFinite(la)?la:null) : null;
+              return x==null?'--':x.toFixed(3).replace(/^0/,'');
+            })()}</b>
+            <span class="mut"> -- fills in once you enter an exit velo</span></p>
+        </div>
+      </div>
+    </div>`,
+    `<button class="btn ghost" data-act="modal-close">Cancel</button>
+     <button class="btn primary" data-act="bip-save"${d.result?'':' disabled'}>Save pitch</button>`);
+}
+
+/* ---------- substitution modal ---------- */
+function subModal(){
+  const g = game(S.liveGameId); if(!g) return '';
+  const L = S.subSide || S.activeLineup;
+  const st = liveState(g);
+  const roster = S.athletes.filter(a=>a.active!==false);
+
+  // Someone already batting elsewhere in this lineup is worth flagging, not blocking.
+  const used = {};
+  for(let i=0;i<9;i++){ const o = occupant(g,L,i); if(o) used[o] = (used[o]||[]).concat(i+1); }
+
+  const rows = Array.from({length:9}, (_,i)=>{
+    const cur = occupant(g, L, i);
+    const hist = slotHistory(g, L, i).filter(e=>e.athleteId);
+    const isUp = i===st.per[L].batterIdx;
+    const dupe = cur && used[cur] && used[cur].length>1;
+    return `<div class="lu">
+      <span class="s">${i+1}</span>
+      <select data-act="sub-pick" data-l="${L}" data-i="${i}" aria-label="Slot ${i+1} hitter">
+        <option value=""${cur?'':' selected'}>-- empty --</option>
+        ${roster.map(a=>
+          `<option value="${a.id}"${cur===a.id?' selected':''}>${esc(a.name)}${a.number?' #'+esc(a.number):''}</option>`).join('')}
+      </select>
+      ${isUp?'<span class="pill gold">at bat</span>':''}
+      ${dupe?`<span class="pill" style="background:var(--bad);color:var(--navy-900)">also slot ${used[cur].filter(s=>s!==i+1).join(', ')}</span>`:''}
+      ${hist.length>1?`<span class="note">in for ${esc(aName(hist[hist.length-2].athleteId))}</span>`:''}
+    </div>`;
+  }).join('');
+
+  return modalHTML(`Substitutions`, `
+    <div class="row" style="margin-bottom:12px">
+      ${g.lineupMode==='dual'?`<div class="seg">
+        ${['A','B'].map(s=>`<button data-act="sub-side" data-l="${s}" aria-pressed="${L===s}">Side ${s}</button>`).join('')}
+      </div>`:''}
+      <span class="note" style="flex:1;min-width:220px">Pick a slot and choose the hitter. Pitches already
+        thrown stay with whoever saw them -- a pinch hitter walking in at 1-2 inherits the count, not the pitches.</span>
+    </div>
+    <div class="lineup">${rows}</div>
+    <div class="panel" style="margin-top:14px;background:var(--navy-750)">
+      <h4 style="margin-bottom:8px">Hitter not on the roster?</h4>
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1;min-width:170px"><span>Name</span>
+          <input type="text" id="sub-new-name" placeholder="First Last"></label>
+        <label class="field" style="width:78px"><span>Number</span>
+          <input type="text" id="sub-new-num" placeholder="21"></label>
+        <div class="field"><span>Bats</span>
+          <select id="sub-new-bats"><option>R</option><option>L</option><option>S</option></select></div>
+        <label class="field" style="width:86px"><span>Into slot</span>
+          <select id="sub-new-slot">${Array.from({length:9},(_,i)=>
+            `<option value="${i}"${i===st.per[L].batterIdx?' selected':''}>${i+1}</option>`).join('')}</select></label>
+        <button class="btn primary" data-act="sub-add-new" data-l="${L}">Add &amp; sub in</button>
+      </div>
+      <p class="note" style="margin:9px 0 0">Adds them to your roster and puts them straight into that slot.</p>
+    </div>`,
+    `<button class="btn primary" data-act="modal-close">Done</button>`);
+}
+
+/* ---------- field chart ---------- */
+const F = {cx:200, cy:330, ppf:0.72, W:400, H:360};  // pixels per foot
+const fx = x => F.cx + x*400*F.ppf;
+const fy = y => F.cy - y*400*F.ppf;
+function fieldHTML(points, clickable){
+  const r = 400*F.ppf, ri = 95*F.ppf, b = 90*F.ppf;
+  const k = Math.SQRT1_2;
+  const lf = [F.cx - r*k, F.cy - r*k], rf = [F.cx + r*k, F.cy - r*k];
+  const arcs = [];
+  for(const [rad,col,wid] of [[r,'var(--navy-600)',1.5],[300*F.ppf,'var(--navy-700)',1],[200*F.ppf,'var(--navy-700)',1]]){
+    arcs.push(`<path d="M ${F.cx-rad*k} ${F.cy-rad*k} A ${rad} ${rad} 0 0 1 ${F.cx+rad*k} ${F.cy-rad*k}"
+      fill="none" stroke="${col}" stroke-width="${wid}"/>`);
+  }
+  return `<div class="fieldwrap"><svg viewBox="0 0 ${F.W} ${F.H}" ${clickable?'data-act="field-click"':''} role="img"
+      aria-label="Spray chart of balls in play">
+    <path d="M ${F.cx} ${F.cy} L ${lf[0]} ${lf[1]} A ${r} ${r} 0 0 1 ${rf[0]} ${rf[1]} Z" fill="#132B52"/>
+    ${arcs.join('')}
+    <path d="M ${F.cx} ${F.cy} L ${lf[0]} ${lf[1]}" stroke="var(--slate-500)" stroke-width="1.5" fill="none"/>
+    <path d="M ${F.cx} ${F.cy} L ${rf[0]} ${rf[1]}" stroke="var(--slate-500)" stroke-width="1.5" fill="none"/>
+    <path d="M ${F.cx} ${F.cy} L ${F.cx-b*k} ${F.cy-b*k} L ${F.cx} ${F.cy-2*b*k} L ${F.cx+b*k} ${F.cy-b*k} Z"
+      fill="none" stroke="var(--gold-700)" stroke-width="1.3"/>
+    <circle cx="${F.cx}" cy="${F.cy - 60.5*F.ppf}" r="2.6" fill="var(--gold-700)"/>
+    <text x="${F.cx}" y="${F.cy - 200*F.ppf - 5}" fill="var(--slate-500)" font-size="9"
+      font-family="IBM Plex Mono, monospace" text-anchor="middle">200</text>
+    <text x="${F.cx}" y="${F.cy - 300*F.ppf - 5}" fill="var(--slate-500)" font-size="9"
+      font-family="IBM Plex Mono, monospace" text-anchor="middle">300</text>
+    ${points.map(p=>{
+      const col = p.res==='HR' ? 'var(--gold-500)' : (p.hitFlag ? 'var(--gold-300)' : 'var(--slate-300)');
+      const rr  = p.res==='HR' ? 4.4 : 3.4;
+      return `<circle cx="${fx(p.x).toFixed(1)}" cy="${fy(p.y).toFixed(1)}" r="${rr}" fill="${col}"
+        fill-opacity="${p.hitFlag||p.hit?0.95:0.5}" stroke="var(--navy-900)" stroke-width="0.8"/>`;
+    }).join('')}
+  </svg></div>`;
+}
+
+/* ---------- confirmation dialog ----------
+   Deliberately NOT window.confirm(). A published page runs inside a sandboxed
+   frame, where the browser refuses confirm/alert/prompt and hands back `false`
+   with no error -- which read exactly like a Delete button that did nothing.
+   This dialog is in-page, so it works everywhere and can offer more than a
+   yes/no. Resolves with the chosen button's id, or false if dismissed. */
+function askConfirm({title, body, buttons}){
+  return new Promise(resolve=>{
+    S.confirm = {title, body, buttons, resolve};
+    openModal('confirm');
+  });
+}
+function confirmModal(){
+  const c = S.confirm;
+  if(!c) return '';
+  return modalHTML(c.title,
+    `<div style="font-size:13.5px;line-height:1.6;color:var(--slate-100)">${c.body}</div>`,
+    c.buttons.map(b=>
+      `<button class="btn ${b.cls||'ghost'}" data-act="confirm-pick" data-v="${b.id}">${esc(b.label)}</button>`
+    ).join(''));
+}
+function resolveConfirm(id){
+  const c = S.confirm;
+  S.confirm = null;
+  closeModal();
+  if(c) c.resolve(id===false ? false : id);
+}
+
+/* ---------- modal plumbing ---------- */
+function modalHTML(title, body, foot){
+  return `<div class="modal-backdrop" data-act="modal-backdrop"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <header><h2>${esc(title)}</h2></header>
+    ${body}
+    <div class="row" style="margin-top:16px;justify-content:flex-end">${foot}</div>
+  </div></div>`;
+}
+function openModal(kind){ S.modal = kind; drawModal(); }
+function closeModal(){ S.modal = null; S.bip = null; $('#modal').innerHTML=''; }
+function dismissModal(){
+  // A pending confirmation must settle even when dismissed, or its caller hangs.
+  if(S.confirm){ const c = S.confirm; S.confirm = null; closeModal(); c.resolve(false); return; }
+  closeModal();
+}
+function drawModal(){
+  const m = {bip:inPlayModal, sub:subModal, report:reportModal, confirm:confirmModal};
+  $('#modal').innerHTML = S.modal && m[S.modal] ? m[S.modal]() : '';
+}
+</script>
+<script>
+/* ============================================================
+   PAGES -- hitter, team, games, roster, export
+   ============================================================ */
+
+/* ---------- shared filter bar ---------- */
+function filterBar(opts){
+  const f = S.filters;
+  const seen = new Set(S.pitches.map(p=>p.pitchType));
+  const games = S.games.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return `<div class="panel">
+    <div class="row" style="gap:14px;align-items:flex-end">
+      <div class="field"><span>Counts as ${help('Games only is the default so a spring profile is not diluted by fall scrimmage work. Switch to scrimmages to review development reps, or both to see everything.')}</span>
+        <div class="seg">
+          <button data-act="filter" data-k="gameType" data-v="game" aria-pressed="${f.gameType==='game'}">Games</button>
+          <button data-act="filter" data-k="gameType" data-v="scrimmage" aria-pressed="${f.gameType==='scrimmage'}">Scrimmages</button>
+          <button data-act="filter" data-k="gameType" data-v="both" aria-pressed="${f.gameType==='both'}">Both</button>
+        </div>
+      </div>
+      <label class="field"><span>Count</span>
+        <select data-act="filter-sel" data-k="count">
+          ${Object.entries(COUNT_GROUPS).map(([k,v])=>
+            `<option value="${k}"${f.count===k?' selected':''}>${v.label}</option>`).join('')}
+          ${[0,1,2,3].flatMap(b=>[0,1,2].map(s=>
+            `<option value="${b}-${s}"${f.count===b+'-'+s?' selected':''}>${b}-${s}</option>`)).join('')}
+        </select></label>
+      <label class="field"><span>Pitch type</span>
+        <select data-act="filter-sel" data-k="pt">
+          <option value="all"${f.pt==='all'?' selected':''}>All pitches</option>
+          ${PITCH_TYPES.filter(p=>seen.has(p.code)).map(p=>
+            `<option value="${p.code}"${f.pt===p.code?' selected':''}>${esc(p.name)}</option>`).join('')}
+        </select></label>
+      <div class="field"><span>Pitcher</span>
+        <div class="seg">
+          ${[['all','Both'],['R','RHP'],['L','LHP']].map(([v,l])=>
+            `<button data-act="filter" data-k="hand" data-v="${v}" aria-pressed="${f.hand===v}">${l}</button>`).join('')}
+        </div>
+      </div>
+      <label class="field"><span>Game</span>
+        <select data-act="filter-sel" data-k="gameId">
+          <option value=""${!f.gameId?' selected':''}>All games</option>
+          ${games.map(g=>`<option value="${g.id}"${f.gameId===g.id?' selected':''}>${fmtDate(g.date)} ${esc(g.opponent||'')}</option>`).join('')}
+        </select></label>
+      <label class="field"><span>From</span>
+        <input type="date" value="${esc(f.from)}" data-act="filter-inp" data-k="from"></label>
+      <label class="field"><span>To</span>
+        <input type="date" value="${esc(f.to)}" data-act="filter-inp" data-k="to"></label>
+      <button class="btn ghost sm" data-act="filter-reset">Reset</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- stat strip ---------- */
+function statStrip(s){
+  const cell = (k,v,tip,hero)=>`<div class="stat${hero?' hero':''}">
+    <span class="k">${k}${tip?help(tip):''}</span><span class="v">${v}</span></div>`;
+  const cov = s.bipTot ? `<small> ${s.bipTag}/${s.bipTot} tagged</small>` : '';
+  return `<div class="stats">
+    ${cell('PA', s.PA)}
+    ${cell('AVG', avg3(s.AVG))}
+    ${cell('OBP', avg3(s.OBP))}
+    ${cell('SLG', avg3(s.SLG))}
+    ${cell('OPS', avg3(s.OPS))}
+    ${cell('wOBA', avg3(s.wOBA), 'One number for total offensive value, on the same scale as on-base percentage. A walk, a single and a homer are each worth what they actually produce, instead of a walk counting as nothing. Around .320 is average, .400 is excellent. Uses '+WOBA_SCALE_NOTE+'.', true)}
+    ${cell('xwOBA', (s.xwOBA==null?'--':avg3(s.xwOBA))+cov, 'What the contact was worth based on how hard and at what angle it was hit, not where it landed. It strips out luck and defense. Only balls with an exit velocity entered are included -- the "tagged" figure tells you how much of the sample that is.', true)}
+    ${cell('ISO', avg3(s.ISO), 'Slugging minus batting average -- raw extra-base power, with singles taken out.')}
+    ${cell('BABIP', avg3(s.BABIP), 'Batting average on balls put in play, excluding homers. Well above .350 over a season usually means good luck rather than a new skill.')}
+    ${cell('K%', pct(s.Kpct,0), 'Share of plate appearances ending in a strikeout.')}
+    ${cell('BB%', pct(s.BBpct,0), 'Share of plate appearances ending in a walk.')}
+  </div>`;
+}
+
+function disciplineTable(s){
+  const rows = [
+    ['Pitches seen', s.pitches, null, 'Every pitch logged for this hitter in the current filter.'],
+    ['Zone rate', pct(s.ZoneSeen), null, 'Share of pitches thrown in the strike zone. Low means pitchers are working around this hitter -- respect, or a pattern to punish.'],
+    ['Swing %', pct(s.Swing), null, 'How often the hitter swings at anything.'],
+    ['Z-Swing %', pct(s.ZSwing), 'high', 'How often the hitter swings at strikes. You want this high -- taking hittable strikes gives away the at-bat.'],
+    ['Chase %', pct(s.Chase), 'low', 'How often the hitter swings at pitches outside the zone. The single most coachable number here. Lower is better.'],
+    ['In-zone take %', pct(s.ZTake), 'low', 'Strikes the hitter let go by. Some are unhittable edges; a high number usually means passivity.'],
+    ['Contact %', pct(s.Contact), 'high', 'Of all swings, how many touched the ball.'],
+    ['Whiff %', pct(s.Whiff), 'low', 'Of all swings, how many missed entirely.'],
+    ['Swing-strike %', pct(s.SwStr), 'low', 'Misses as a share of every pitch seen, not just swings.'],
+    ['First-pitch swing %', pct(s.FPSwing), null, 'How aggressive the hitter is on 0-0.'],
+    ['Avg exit velo', s.EV==null?'--':n1(s.EV)+' mph', 'high', 'Average exit velocity on balls in play where one was entered.'],
+    ['xwOBA on contact', s.xwOBAcon==null?'--':avg3(s.xwOBAcon), 'high', 'Expected value of the contact this hitter makes, from exit velocity and launch angle. Ignores walks and strikeouts -- it is a pure quality-of-contact number.'],
+    ['Decision runs / 100', sgn1(s.DecRuns), 'high', 'Runs gained or lost per 100 pitches by the swing-or-take decision alone. Taking a ball gains, taking a strike or chasing loses. It credits the decision, not the result -- every ball in play in the same count scores identically, because the hitter cannot control where it lands.'],
+  ];
+  return `<div class="tw"><table><thead><tr><th>Plate discipline</th><th>Value</th><th>Better</th></tr></thead>
+    <tbody>${rows.map(([k,v,dir,tip])=>`<tr>
+      <td>${k} ${tip?help(tip):''}</td><td class="n">${v}</td>
+      <td class="mut" style="font-size:11px">${dir==='high'?'higher':dir==='low'?'lower':'--'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ---------- heat map panel ---------- */
+function heatPanel(pitches, title){
+  const g = heatGrid(pitches, S.hmMetric);
+  const M = g.metric;
+  const lo = IZ_LO/GRID*100, hi = (IZ_HI+1)/GRID*100;
+  const cells = g.cells.map(c=>{
+    const tip = `${c.n} pitch${c.n===1?'':'es'}`+(c.v!=null&&!c.thin?` -- ${M.fmt(c.v)}`:'');
+    return `<div style="background:${heatColor(c.thin?null:c.v,g)}" class="${c.thin?'hatch':''}" title="${tip}"></div>`;
+  }).join('');
+  return `<div class="panel">
+    <header><h3>${title}</h3><span class="sub">${g.total} pitches</span></header>
+    <div class="row" style="margin-bottom:11px">
+      <div class="seg">${Object.entries(HM_METRICS).map(([k,v])=>
+        `<button data-act="hm" data-v="${k}" aria-pressed="${S.hmMetric===k}">${v.label}</button>`).join('')}</div>
+      ${help(M.tip)}
+    </div>
+    <div class="hmwrap">
+      <div class="hm">${cells}</div>
+      <div class="szbox" style="left:${lo}%;top:${lo}%;width:${hi-lo}%;height:${hi-lo}%">${SZ9}</div>
+    </div>
+    <div class="hmlegend">
+      <span>${M.type==='div'?'worse':'low'}</span>
+      <span class="bar" style="background:${RAMP_CSS}"></span>
+      <span>${M.type==='div'?'better':'high'}</span>
+    </div>
+    <p class="note" style="margin:8px 0 0">Viewed from behind the catcher. The white box is the strike zone.
+      Hatched cells have too few pitches to color yet -- they are not cold, just unknown.
+      Values are smoothed across neighbouring cells; hover a cell for its raw pitch count.</p>
+  </div>`;
+}
+
+/* ---------- spray panel ---------- */
+function sprayPanel(pitches){
+  const bip = pitches.filter(p=>p.decision==='in_play');
+  const pts = bip.filter(p=>p.spray && p.spray.x!=null).map(p=>({
+    x:p.spray.x, y:p.spray.y, res:p.result, hitFlag: RES[p.result]?.hit,
+  }));
+  const hits = bip.filter(p=>RES[p.result]?.hit).length;
+  const dists = bip.filter(p=>p.dist!=null&&isFinite(p.dist)).map(p=>p.dist);
+  return `<div class="panel">
+    <header><h3>Spray chart</h3>
+      <span class="sub">${pts.length} of ${bip.length} balls in play located</span></header>
+    ${pts.length?fieldHTML(pts,false):`<div class="empty">No located balls in play in this filter.<br>
+      Tap the field when you log a ball in play and they show up here.</div>`}
+    <div class="row" style="margin-top:11px;gap:18px">
+      <span class="note">Balls in play <b class="num">${bip.length}</b></span>
+      <span class="note">Hits <b class="num">${hits}</b></span>
+      ${dists.length?`<span class="note">Max distance <b class="num">${Math.max(...dists)} ft</b></span>`:''}
+    </div>
+    <p class="note" style="margin:8px 0 0">Gold is a hit, bright gold a home run, grey an out. Arcs are 200 and 300 feet.</p>
+  </div>`;
+}
+
+/* ---------- count matrix ---------- */
+function countMatrix(pitches){
+  const f = S.filters;
+  const cell = (b,s)=>{
+    const ps = pitches.filter(p=>p.balls===b&&p.strikes===s);
+    const d = discipline(ps);
+    const key = b+'-'+s;
+    return `<button data-act="filter" data-k="count" data-v="${key}" aria-pressed="${f.count===key}">
+      ${ps.length?pct(d.ZoneSeen,0):'--'}<span class="sm">${key} &middot; ${ps.length}p</span></button>`;
+  };
+  return `<div class="panel">
+    <header><h3>How they're pitched, by count</h3>
+      ${help('Each cell is the share of pitches thrown in the strike zone in that count, with the pitch count underneath. A low number means pitchers expand the zone on this hitter in that count. Click any cell to filter every panel on this page to it.')}
+      <span class="sub">zone % &middot; click to filter</span></header>
+    <div class="cmx">
+      <div class="h"></div><div class="h">0 str</div><div class="h">1 str</div><div class="h">2 str</div>
+      ${[0,1,2,3].map(b=>`<div class="h">${b} ball${b===1?'':'s'}</div>${[0,1,2].map(s=>cell(b,s)).join('')}`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ---------- PA log ---------- */
+function paLog(pitches, athleteId){
+  const pas = derivePAs(pitches).filter(pa=>!athleteId||pa.athleteId===athleteId).reverse();
+  if(!pas.length) return '';
+  return `<div class="panel">
+    <header><h3>Plate appearances</h3><span class="sub">${pas.length} logged, newest first</span></header>
+    <div class="tw"><table><thead><tr>
+      <th>Date</th><th>Opponent</th><th>Result</th><th>Pitches</th><th>Sequence</th><th>EV</th><th>Dist</th>
+    </tr></thead><tbody>${pas.slice(0,80).map(pa=>{
+      const g = game(pa.gameId);
+      const seq = pa.pitches.map(p=>{
+        const a = advanceCount(p);
+        return `<span class="p ${p.decision==='in_play'?'bip':(p.decision!=='taken'?'sw':'')}">${p.pitchType} ${decShort(p)}</span>`;
+      }).join(' ');
+      return `<tr>
+        <td>${fmtDate(pa.date)}</td>
+        <td>${esc(g?.opponent||'--')} ${pa.gameType==='scrimmage'?'<span class="pill type-scrimmage">scrim</span>':''}</td>
+        <td><b>${pa.outcome||'in progress'}</b></td>
+        <td class="n">${pa.pitches.length}</td>
+        <td><div class="seqlog">${seq}</div></td>
+        <td class="n">${pa.last.ev!=null?n1(pa.last.ev):'--'}</td>
+        <td class="n">${pa.last.dist!=null?pa.last.dist:'--'}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>
+  </div>`;
+}
+
+/* ============================================================
+   HITTER PAGE
+   ============================================================ */
+function viewHitter(){
+  if(!S.athletes.length) return `<div class="empty">No hitters yet. Add them on the Roster tab.</div>`;
+  // A selection can go stale if the roster changed on another device.
+  if(S.athleteId && !athlete(S.athleteId)) S.athleteId = null;
+  const id = S.athleteId || S.athletes[0].id;
+  const a = athlete(id);
+  const mine = S.pitches.filter(p=>p.athleteId===id);
+  const f = S.filters;
+  const ps = filterPitches(mine, f);
+  const s = withOPS(computeStats(ps, id));
+  const label = f.gameType==='both' ? 'games and scrimmages' : (f.gameType==='game' ? 'games only' : 'scrimmages only');
+
+  return `<div class="col">
+    <div class="panel">
+      <div class="row" style="gap:16px;align-items:flex-end">
+        <label class="field" style="min-width:230px"><span>Hitter</span>
+          <select data-act="pick-athlete">${S.athletes.map(x=>
+            `<option value="${x.id}"${x.id===id?' selected':''}>${esc(x.name)}${x.number?' #'+esc(x.number):''}</option>`).join('')}</select>
+        </label>
+        <div>
+          <span class="eyebrow">${esc(a.bats||'R')}HH &middot; ${esc(a.classYear||'--')} &middot; ${esc(a.positions||'--')}</span>
+          <h2 style="margin-top:2px">${esc(a.name)}</h2>
+        </div>
+        <span class="note" style="margin-left:auto">Showing <b>${label}</b> &middot; ${ps.length} pitches
+          ${f.count!=='all'?' &middot; count '+esc(COUNT_GROUPS[f.count]?.label||f.count):''}</span>
+      </div>
+    </div>
+    ${filterBar()}
+    ${ps.length?`
+      ${statStrip(s)}
+      <div class="grid2">
+        ${heatPanel(ps, 'Zone profile')}
+        ${sprayPanel(ps)}
+      </div>
+      <div class="grid2">
+        <div class="panel">${disciplineTable(s)}</div>
+        ${countMatrix(ps)}
+      </div>
+      ${paLog(ps, id)}
+    `:emptyHitter(a, mine, f)}
+  </div>`;
+}
+
+/* An empty page should say WHY it is empty and offer the fix. The common case
+   is real data sitting in scrimmages while the page defaults to games only. */
+function emptyHitter(a, mine, f){
+  if(!mine.length) return `<div class="empty">No pitches logged for ${esc(a.name)} yet.<br>
+    Track a game on the <b>Live Game</b> tab and this page fills in.</div>`;
+  const games = mine.filter(p=>p.gameType==='game').length;
+  const scrims = mine.filter(p=>p.gameType==='scrimmage').length;
+  const other = f.gameType==='game' ? scrims : games;
+  const otherLabel = f.gameType==='game' ? 'scrimmages' : 'games';
+  const otherVal = f.gameType==='game' ? 'scrimmage' : 'game';
+  const narrowed = f.count!=='all' || f.pt!=='all' || f.hand!=='all' || f.from || f.to || f.gameId;
+  return `<div class="empty">
+    <div style="font-size:14px;color:var(--slate-100);margin-bottom:6px">
+      Nothing matches this filter for ${esc(a.name)}.</div>
+    <div style="margin-bottom:14px">${esc(a.name)} has
+      <b class="num">${games}</b> pitch${games===1?'':'es'} in games and
+      <b class="num">${scrims}</b> in scrimmages.</div>
+    <div class="row" style="justify-content:center">
+      ${f.gameType!=='both' && other>0 ? `<button class="btn primary sm" data-act="filter" data-k="gameType"
+        data-v="${otherVal}">Show ${otherLabel} (${other})</button>` : ''}
+      ${f.gameType!=='both' ? `<button class="btn sm" data-act="filter" data-k="gameType" data-v="both">Show both</button>`:''}
+      ${narrowed ? `<button class="btn ghost sm" data-act="filter-reset">Clear all filters</button>`:''}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   TEAM PAGE
+   ============================================================ */
+function viewTeam(){
+  const f = S.filters;
+  const all = filterPitches(S.pitches, f);
+  const rows = S.athletes.map(a=>{
+    const ps = all.filter(p=>p.athleteId===a.id);
+    return {a, ps, s: withOPS(computeStats(ps, a.id))};
+  }).filter(r=>r.ps.length);
+  const sortKey = S.teamSort || 'PA';
+  rows.sort((x,y)=>{
+    const va = x.s[sortKey], vb = y.s[sortKey];
+    if(va==null) return 1; if(vb==null) return -1;
+    return vb-va;
+  });
+  const teamPs = all;
+  const ts = withOPS(computeStats(teamPs));
+  const cols = [['PA','PA'],['AVG','AVG'],['OBP','OBP'],['SLG','SLG'],['wOBA','wOBA'],['xwOBA','xwOBA'],
+    ['Kpct','K%'],['BBpct','BB%'],['Chase','Chase'],['ZSwing','Z-Sw'],['Whiff','Whiff'],['EV','Avg EV'],['DecRuns','Dec runs']];
+  const fmt = (k,v)=>{
+    if(v==null) return '--';
+    if(['AVG','OBP','SLG','wOBA','xwOBA'].includes(k)) return avg3(v);
+    if(['Kpct','BBpct','Chase','ZSwing','Whiff'].includes(k)) return pct(v,0);
+    if(k==='EV') return n1(v);
+    if(k==='DecRuns') return sgn1(v);
+    return v;
+  };
+  return `<div class="col">
+    <div class="panel"><header><h2>Team</h2>
+      <span class="sub">${f.gameType==='both'?'games and scrimmages':f.gameType+'s only'} &middot; ${all.length} pitches</span></header>
+      ${statStrip(ts)}
+    </div>
+    ${filterBar()}
+    ${!rows.length && S.pitches.length ? `<div class="empty">
+      <div style="font-size:14px;color:var(--slate-100);margin-bottom:6px">Nothing matches this filter.</div>
+      <div style="margin-bottom:14px">You have
+        <b class="num">${S.pitches.filter(p=>p.gameType==='game').length}</b> pitches in games and
+        <b class="num">${S.pitches.filter(p=>p.gameType==='scrimmage').length}</b> in scrimmages.</div>
+      <div class="row" style="justify-content:center">
+        <button class="btn primary sm" data-act="filter" data-k="gameType" data-v="both">Show both</button>
+        <button class="btn ghost sm" data-act="filter-reset">Clear all filters</button>
+      </div></div>` : ''}
+    ${rows.length?`<div class="panel">
+      <header><h3>Hitters</h3><span class="sub">click a row for the full profile &middot; click a header to sort</span></header>
+      <div class="tw"><table><thead><tr><th>Hitter</th>
+        ${cols.map(([k,l])=>`<th data-act="team-sort" data-k="${k}">${l}${sortKey===k?' &darr;':''}</th>`).join('')}
+      </tr></thead><tbody>${rows.map(r=>`<tr class="clickable" data-act="goto-hitter" data-id="${r.a.id}">
+        <td><b>${esc(r.a.name)}</b> <span class="mut">${esc(r.a.bats||'R')}HH</span></td>
+        ${cols.map(([k])=>`<td class="n">${fmt(k, r.s[k])}</td>`).join('')}
+      </tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="grid2">
+      ${heatPanel(all, 'How the team is pitched')}
+      <div class="panel"><header><h3>Team pitch mix</h3>
+        ${help('What the staff is throwing your lineup, overall and in the count you have selected. A fastball-heavy mix in hitter counts is a plan you can attack.')}</header>
+        ${pitchMixTable(all)}
+      </div>
+    </div>
+    ${countMatrix(all)}
+    `:(S.pitches.length?'':`<div class="empty">No pitches logged yet.<br>
+       Start a game on the <b>Live Game</b> tab.</div>`)}
+  </div>`;
+}
+
+function pitchMixTable(pitches){
+  const seen = PITCH_TYPES.filter(t=>pitches.some(p=>p.pitchType===t.code));
+  if(!seen.length) return `<div class="empty">Nothing logged yet.</div>`;
+  return `<div class="tw"><table><thead><tr><th>Pitch</th><th>Count</th><th>Share</th><th>Zone%</th><th>Swing%</th><th>Whiff%</th><th>Avg EV</th></tr></thead>
+    <tbody>${seen.map(t=>{
+      const ps = pitches.filter(p=>p.pitchType===t.code);
+      const d = discipline(ps);
+      return `<tr><td>${esc(t.name)}</td><td class="n">${ps.length}</td>
+        <td class="n">${pct(ps.length/pitches.length,0)}</td>
+        <td class="n">${pct(d.ZoneSeen,0)}</td><td class="n">${pct(d.Swing,0)}</td>
+        <td class="n">${pct(d.Whiff,0)}</td><td class="n">${d.EV==null?'--':n1(d.EV)}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+/* ============================================================
+   GAMES + GAME REPORT
+   ============================================================ */
+function viewGames(){
+  if(S.reportGameId) return gameReport(S.reportGameId);
+  const games = S.games.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!games.length) return `<div class="empty">No games yet. Start one on the Live Game tab.</div>`;
+  return `<div class="col"><div class="panel">
+    <header><h2>Games</h2><span class="sub">${games.length} logged</span></header>
+    <div class="tw"><table><thead><tr><th>Date</th><th>Opponent</th><th>Type</th><th>Sides</th>
+      <th>Pitches</th><th>PA</th><th>Status</th><th></th></tr></thead>
+    <tbody>${games.map(g=>{
+      const ps = gamePitches(g.id);
+      return `<tr>
+        <td class="clickable" data-act="open-report" data-id="${g.id}">${fmtDate(g.date)}</td>
+        <td class="clickable" data-act="open-report" data-id="${g.id}">${esc(g.opponent||'--')}</td>
+        <td><span class="pill ${g.gameType==='scrimmage'?'type-scrimmage':'gold'}">${g.gameType}</span></td>
+        <td class="n">${g.lineupMode==='dual'?'2':'1'}</td>
+        <td class="n">${ps.length}</td>
+        <td class="n">${derivePAs(ps).filter(p=>p.complete).length}</td>
+        <td>${g.status==='live'?'<span class="pill live">live</span>':'<span class="mut">final</span>'}</td>
+        <td style="text-align:right"><div class="row tight" style="justify-content:flex-end">
+          <button class="btn ghost sm" data-act="open-report" data-id="${g.id}">Report</button>
+          <button class="btn danger sm" data-act="delete-game" data-id="${g.id}">Delete</button>
+        </div></td></tr>`;
+    }).join('')}</tbody></table></div>
+  </div></div>`;
+}
+
+function gameReport(gid){
+  const g = game(gid);
+  if(!g) return `<div class="empty">Game not found.</div>`;
+  const ps = gamePitches(gid);
+  const sides = sidesOf(g);
+  const byAthlete = new Map();
+  for(const p of ps){
+    if(!byAthlete.has(p.athleteId)) byAthlete.set(p.athleteId, []);
+    byAthlete.get(p.athleteId).push(p);
+  }
+  const blocks = [...byAthlete.entries()].map(([id, list])=>{
+    const s = withOPS(computeStats(list, id));
+    const pas = derivePAs(list).filter(pa=>pa.athleteId===id);
+    const chases = list.filter(p=>!p.inZone && p.decision!=='taken' && p.decision!=='hbp');
+    const ztakes = list.filter(p=>p.inZone && p.decision==='taken');
+    return `<div class="panel">
+      <header><h3>${esc(aName(id))}</h3>
+        <span class="sub">${pas.filter(p=>p.complete).length} PA &middot; ${list.length} pitches &middot; side ${list[0].lineup}</span></header>
+      <div class="stats" style="margin-bottom:12px">
+        <div class="stat"><span class="k">Line</span><span class="v" style="font-size:15px">${s.H}-${s.AB}${s.BB?', '+s.BB+' BB':''}${s.K?', '+s.K+' K':''}</span></div>
+        <div class="stat"><span class="k">wOBA</span><span class="v">${avg3(s.wOBA)}</span></div>
+        <div class="stat hero"><span class="k">Dec runs/100 ${help('Runs gained or lost per 100 pitches by swing-or-take decisions alone in this game.')}</span><span class="v">${sgn1(s.DecRuns)}</span></div>
+        <div class="stat"><span class="k">Chases</span><span class="v">${chases.length}<small>/${list.filter(p=>!p.inZone).length} out of zone</small></span></div>
+        <div class="stat"><span class="k">Strikes taken</span><span class="v">${ztakes.length}<small>/${list.filter(p=>p.inZone).length} in zone</small></span></div>
+        <div class="stat"><span class="k">Whiffs</span><span class="v">${list.filter(p=>p.decision==='swing_miss').length}</span></div>
+      </div>
+      <div class="tw"><table><thead><tr><th>PA</th><th>Result</th><th>Sequence</th></tr></thead>
+        <tbody>${pas.map((pa,i)=>`<tr><td class="n">${i+1}</td><td><b>${pa.outcome||'--'}</b></td>
+          <td><div class="seqlog">${pa.pitches.map(p=>{
+            const bad = (!p.inZone && p.decision!=='taken' && p.decision!=='hbp');
+            return `<span class="p ${p.decision==='in_play'?'bip':(bad?'sw':'')}" title="${bad?'chase':''}">${p.pitchType} ${decShort(p)}${bad?' *':''}</span>`;
+          }).join(' ')}</div></td></tr>`).join('')}</tbody></table></div>
+      ${chases.length?`<p class="note" style="margin:9px 0 0">* marks a swing at a pitch outside the zone.</p>`:''}
+    </div>`;
+  }).join('');
+
+  return `<div class="col">
+    <div class="panel"><div class="row">
+      <button class="btn ghost sm" data-act="close-report">&larr; All games</button>
+      <div><span class="eyebrow">${g.gameType} &middot; ${fmtDate(g.date)}</span>
+        <h2 style="margin-top:2px">vs ${esc(g.opponent||'--')}</h2></div>
+      <span class="note" style="margin-left:auto">${ps.length} pitches &middot;
+        ${derivePAs(ps).filter(p=>p.complete).length} plate appearances &middot; ${sides.length} side${sides.length>1?'s':''}</span>
+      ${g.status==='live'?`<button class="btn danger sm" data-act="end-game">End game</button>`:''}
+      <button class="btn danger sm" data-act="delete-game" data-id="${g.id}">Delete game</button>
+    </div></div>
+    ${sendPanel(g)}
+    ${lineupCard(g)}
+    ${blocks || `<div class="empty">No pitches logged in this game.</div>`}
+  </div>`;
+}
+
+/* ---------- sending reports to the hitters ----------
+   This page cannot send mail itself -- there is no mail server behind it and
+   outbound requests are blocked. What it can do is hand a finished report to
+   your own mail app, addressed and written, so sending is one click and you
+   still see what goes out. */
+function sendPanel(g){
+  const ids = [...new Set(gamePitches(g.id).map(p=>p.athleteId))];
+  if(!ids.length) return '';
+  const withMail = ids.filter(id=>athlete(id)?.email);
+  const without  = ids.filter(id=>!athlete(id)?.email);
+  return `<div class="panel">
+    <header><h3>Send reports to hitters</h3>
+      <span class="sub">${withMail.length} of ${ids.length} have an email on file</span></header>
+    <div class="row">
+      <button class="btn primary" data-act="mail-all" data-gid="${g.id}"${withMail.length?'':' disabled'}>
+        Open ${withMail.length||''} draft${withMail.length===1?'':'s'}</button>
+      <span class="note">Each hitter gets their own at-bat-by-at-bat report. Your mail app opens with it
+        written and addressed -- review, then send.</span>
+    </div>
+    ${without.length?`<div class="warnbar" style="margin-top:12px">
+      No email on the roster for ${without.map(id=>esc(aName(id))).join(', ')}.
+      Add one on the <b>Roster</b> tab and it will be included next time.</div>`:''}
+    <div class="tw" style="margin-top:12px"><table><thead><tr>
+      <th>Hitter</th><th>Email</th><th></th></tr></thead>
+      <tbody>${ids.map(id=>{
+        const a = athlete(id);
+        return `<tr><td><b>${esc(aName(id))}</b></td>
+          <td style="text-align:left">${a?.email?esc(a.email):'<span class="mut">none</span>'}</td>
+          <td style="text-align:right"><div class="row tight" style="justify-content:flex-end">
+            <button class="btn ghost sm" data-act="show-report" data-gid="${g.id}" data-id="${id}">Preview</button>
+            <button class="btn ghost sm" data-act="copy-report" data-gid="${g.id}" data-id="${id}">Copy</button>
+            <button class="btn sm" data-act="mail-one" data-gid="${g.id}" data-id="${id}"${a?.email?'':' disabled'}>Email</button>
+          </div></td></tr>`;
+      }).join('')}</tbody></table></div>
+    <p class="note" style="margin:10px 0 0">Want these to go out on their own with no clicks? That needs a
+      small mail service behind the app -- this page has no way to send on its own.</p>
+  </div>`;
+}
+
+function reportModal(){
+  const r = S.showReport;
+  if(!r) return '';
+  return modalHTML('Report preview -- '+aName(r.id),
+    `<textarea readonly style="width:100%;min-height:56vh;font-family:var(--f-mono);font-size:12px;
+      line-height:1.6;background:var(--navy-900);color:var(--slate-100);border:1px solid var(--navy-700);
+      border-radius:4px;padding:12px;resize:vertical">${esc(reportText(r.gid, r.id))}</textarea>
+     <p class="note" style="margin:8px 0 0">Select all and copy if the Copy button is blocked by your browser.</p>`,
+    `<button class="btn ghost" data-act="modal-close">Close</button>
+     <button class="btn primary" data-act="mail-one" data-gid="${r.gid}" data-id="${r.id}"
+       ${athlete(r.id)?.email?'':' disabled'}>Email it</button>`);
+}
+
+function lineupCard(g){
+  return `<div class="grid2">${sidesOf(g).map(L=>`<div class="panel">
+    <header><h3>Lineup ${L}</h3></header>
+    <div class="tw"><table><thead><tr><th>#</th><th>Hitter</th><th>Entered</th></tr></thead>
+    <tbody>${Array.from({length:9},(_,i)=>{
+      const hist = slotHistory(g, L, i);
+      if(!hist.length) return `<tr><td>${i+1}</td><td class="mut">empty</td><td></td></tr>`;
+      return hist.map((occ,j)=>`<tr>
+        <td>${j===0?i+1:''}</td>
+        <td>${j>0?'<span class="mut">&#8627; </span>':''}${occ.athleteId?esc(aName(occ.athleteId)):'<span class="mut">removed</span>'}</td>
+        <td class="n">${occ.enteredAtPitchSeq>1?'pitch '+occ.enteredAtPitchSeq:'start'}</td>
+      </tr>`).join('');
+    }).join('')}</tbody></table></div>
+  </div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   ROSTER
+   ============================================================ */
+function viewRoster(){
+  return `<div class="col">
+    <div class="panel">
+      <header><h2>Roster</h2><span class="sub">${S.athletes.length} hitters</span></header>
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1;min-width:180px"><span>Name</span>
+          <input type="text" id="ra-name" placeholder="First Last"></label>
+        <label class="field" style="width:82px"><span>Number</span>
+          <input type="text" id="ra-num" placeholder="12"></label>
+        <div class="field"><span>Bats</span>
+          <select id="ra-bats"><option>R</option><option>L</option><option>S</option></select></div>
+        <label class="field" style="width:118px"><span>Class</span>
+          <input type="text" id="ra-class" placeholder="e.g. So."></label>
+        <label class="field" style="width:118px"><span>Position</span>
+          <input type="text" id="ra-pos" placeholder="e.g. CF"></label>
+        <label class="field" style="width:210px"><span>Email (optional)</span>
+          <input type="email" id="ra-email" placeholder="name@mountmarty.edu"></label>
+        <button class="btn primary" data-act="add-athlete">Add hitter</button>
+      </div>
+    </div>
+    ${S.athletes.length?`<div class="panel">
+      <div class="tw"><table><thead><tr><th>Hitter</th><th>#</th><th>Bats</th><th>Class</th><th>Pos</th>
+        <th>Email ${help('Used to send this hitter their own game report. You review and send each one from your mail app -- nothing leaves this page on its own.')}</th>
+        <th>Pitches</th><th>PA</th><th>Status</th><th></th></tr></thead>
+      <tbody>${S.athletes.map(a=>{
+        const ps = S.pitches.filter(p=>p.athleteId===a.id);
+        return `<tr><td><b>${esc(a.name)}</b></td><td class="n">${esc(a.number||'')}</td>
+          <td>${esc(a.bats||'R')}</td><td>${esc(a.classYear||'')}</td><td>${esc(a.positions||'')}</td>
+          <td style="text-align:left"><input type="email" value="${esc(a.email||'')}" placeholder="add email"
+            style="width:208px" data-act="athlete-email" data-id="${a.id}"></td>
+          <td class="n">${ps.length}</td>
+          <td class="n">${derivePAs(ps).filter(p=>p.complete&&p.athleteId===a.id).length}</td>
+          <td>${a.active===false?'<span class="mut">inactive</span>':'<span class="pill gold">active</span>'}</td>
+          <td style="text-align:right"><div class="row tight" style="justify-content:flex-end">
+            <button class="btn ghost sm" data-act="goto-hitter" data-id="${a.id}">Profile</button>
+            <button class="btn ghost sm" data-act="toggle-active" data-id="${a.id}">${a.active===false?'Activate':'Bench'}</button>
+            <button class="btn danger sm" data-act="delete-athlete" data-id="${a.id}">Delete</button>
+          </div></td></tr>`;
+      }).join('')}</tbody></table></div>
+    </div>`:`<div class="empty">Add your hitters to get started.</div>`}
+    <p class="note">Benching a hitter keeps every pitch they have seen and only hides them from new lineups.</p>
+  </div>`;
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+function viewExport(){
+  const n = S.pitches.length;
+  return `<div class="col">
+    <div class="panel">
+      <header><h2>Export</h2><span class="sub">${n} pitches &middot; ${S.games.length} games &middot; ${S.athletes.length} hitters</span></header>
+      <p class="note" style="max-width:62ch">Your data is never locked in here. The CSV is one row per pitch with every
+        field flattened, and the JSON is the complete dataset -- roster, games, lineups with substitutions, and pitches.
+        Both map straight onto the three tables in PORTING.md if you move this to your own database.</p>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" data-act="export-csv"${n?'':' disabled'}>Download pitch CSV</button>
+        <button class="btn" data-act="export-json"${n?'':' disabled'}>Download full JSON</button>
+      </div>
+    </div>
+    ${importPanel()}
+    <div class="panel">
+      <header><h3>This device</h3></header>
+      <p class="note" style="margin:0 0 12px">Storage: <b>${esc(store.name)}</b>${
+        store===supabaseStore ? ' -- shared with every coach on the list' :
+        store===localStore ? ' -- nothing leaves this browser' : ' -- shared through Claude'}</p>
+      <div class="row">
+        ${store===supabaseStore?'<button class="btn ghost sm" data-act="sign-out">Sign out</button>':''}
+      </div>
+    </div>
+    <div class="panel">
+      <header><h3>What the numbers rest on</h3></header>
+      <ul class="note" style="margin:0;padding-left:18px;line-height:1.75">
+        <li><b>wOBA</b> uses ${WOBA_SCALE_NOTE}. Intentional walks are not tracked separately, so they are treated as walks.</li>
+        <li><b>xwOBA</b> comes from an exit-velocity by launch-angle grid built from
+          ${LOOKUPS.n_bip ? LOOKUPS.n_bip.toLocaleString() : '614,458'} MLB batted balls, 2021-2025
+          (${esc(LOOKUPS.source)}). Every cell rests on at least ${LOOKUPS.min_n} real batted balls.
+          Balls logged without an exit velocity are excluded, never estimated.</li>
+        <li><b>Decision runs</b> use the mean change in run expectancy by count from the same seasons.
+          It scores the decision, not the outcome.</li>
+        <li><b>Heat maps</b> are smoothed across neighbouring cells because a single hitter's season is
+          a few hundred pitches over 169 cells. Cells still too thin are hatched rather than colored.</li>
+      </ul>
+    </div>
+  </div>`;
+}
+</script>
+<script>
+/* ============================================================
+   IMPORT -- move a season between deployments
+   ------------------------------------------------------------
+   Reads the JSON that the Export tab writes and loads it into
+   whichever store is active. Two steps on purpose: parse and
+   show exactly what will happen, then apply only on confirm.
+   Nothing is written during the preview.
+   ============================================================ */
+
+const normName = s => String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+
+/* Parse and validate. Returns {ok, errors, warnings, athletes, games, pitches}.
+   Strict about shape, forgiving about extra fields and about the older nested
+   lineup format, so a file exported by any version still loads. */
+function parseImport(text){
+  const out = {ok:false, errors:[], warnings:[], athletes:[], games:[], pitches:[]};
+  let raw;
+  try{ raw = JSON.parse(text); }
+  catch(e){ out.errors.push('That is not valid JSON. Paste the whole exported file, or choose it with the file picker.'); return out; }
+
+  if(!raw || typeof raw !== 'object' || Array.isArray(raw)){
+    out.errors.push('The file should be a single JSON object with athletes, games and pitches.');
+    return out;
+  }
+  for(const k of ['athletes','games','pitches']){
+    if(!Array.isArray(raw[k])){ out.errors.push(`Missing or malformed "${k}" list.`); }
+  }
+  if(out.errors.length) return out;
+
+  out.athletes = raw.athletes.filter(a=>{
+    if(!a || !a.id || !a.name){ out.warnings.push('Skipped a hitter with no id or name.'); return false; }
+    return true;
+  });
+  out.games = raw.games.filter(g=>{
+    if(!g || !g.id || !g.date){ out.warnings.push('Skipped a game with no id or date.'); return false; }
+    lineupEntries(g);                       // migrates the old nested shape in place
+    if(!g.gameType) g.gameType = 'game';
+    if(!g.lineupMode) g.lineupMode = 'single';
+    if(!g.status) g.status = 'final';
+    return true;
+  });
+  const gameIds = new Set(out.games.map(g=>g.id));
+  out.pitches = raw.pitches.filter(p=>{
+    if(!p || !p.id || !p.gameId || !p.athleteId){ out.warnings.push('Skipped a pitch with missing ids.'); return false; }
+    if(!gameIds.has(p.gameId)){ out.warnings.push(`Skipped a pitch from game ${p.gameId}, which is not in the file.`); return false; }
+    if(p.zoneRow==null || p.zoneCol==null || !p.decision){ out.warnings.push('Skipped a pitch with no location or result.'); return false; }
+    if(p.inZone==null) p.inZone = inZone(p.zoneRow, p.zoneCol);
+    return true;
+  });
+
+  if(!out.athletes.length && !out.pitches.length){
+    out.errors.push('The file has nothing to import.');
+    return out;
+  }
+  out.ok = true;
+  out.exportedAt = raw.exportedAt || null;
+  return out;
+}
+
+/* Work out what an import would do, without doing it. `matchByName` maps an
+   incoming hitter onto an existing one with the same name, so importing into a
+   roster you have already typed does not create a second Zak Evers. */
+function planImport(parsed, opts){
+  const byId = new Map(S.athletes.map(a=>[a.id,a]));
+  const byName = new Map(S.athletes.map(a=>[normName(a.name),a]));
+  const remap = {};                          // incoming athlete id -> existing id
+  const plan = {newAthletes:[], mergedAthletes:[], newGames:[], skippedGames:[],
+                newPitches:[], skippedPitches:[], remap};
+
+  for(const a of parsed.athletes){
+    if(byId.has(a.id)){ plan.mergedAthletes.push(a); continue; }
+    const match = opts.matchByName ? byName.get(normName(a.name)) : null;
+    if(match){ remap[a.id] = match.id; plan.mergedAthletes.push(a); }
+    else plan.newAthletes.push(a);
+  }
+
+  const haveGames = new Set(S.games.map(g=>g.id));
+  for(const g of parsed.games){
+    if(haveGames.has(g.id)) plan.skippedGames.push(g);
+    else plan.newGames.push(g);
+  }
+
+  const havePitches = new Set(S.pitches.map(p=>p.id));
+  const newGameIds = new Set(plan.newGames.map(g=>g.id));
+  for(const p of parsed.pitches){
+    if(havePitches.has(p.id) || !newGameIds.has(p.gameId)) plan.skippedPitches.push(p);
+    else plan.newPitches.push(p);
+  }
+  return plan;
+}
+
+/* Apply the plan. Local state first so the screen is immediately right, then
+   the store one row at a time -- a failed write lands in the retry queue like
+   any other, so a flaky connection cannot lose half an import. */
+async function applyImport(parsed, opts){
+  const plan = planImport(parsed, opts);
+  const remap = plan.remap;
+  const fixId = id => remap[id] || id;
+
+  const rows = {athletes:[], games:[], pitches:[]};
+  for(const a of plan.newAthletes){
+    rows.athletes.push({...a, active: a.active!==false});
+  }
+  for(const g of plan.newGames){
+    const copy = {...g, lineup: lineupEntries(g).map(e=>({...e, athleteId: e.athleteId ? fixId(e.athleteId) : null}))};
+    delete copy.lineups;                     // drop the legacy shape on the way in
+    rows.games.push(copy);
+  }
+  for(const p of plan.newPitches){
+    rows.pitches.push({...p, athleteId: fixId(p.athleteId)});
+  }
+
+  /* Hold every incoming id before touching local state. Each write triggers a
+     snapshot from the store, and a snapshot only preserves local rows that are
+     spoken for -- so without this, writing the first row would drop every row
+     still waiting its turn. */
+  const allIds = [...rows.athletes, ...rows.games, ...rows.pitches].map(r=>r.id);
+  allIds.forEach(id=>inflight.add(id));
+
+  let written = 0, failed = 0;
+  try{
+    S.athletes.push(...rows.athletes);
+    S.games.push(...rows.games);
+    S.pitches.push(...rows.pitches);
+    persistCache();
+    adoptLiveGame();
+    render();
+
+    for(const coll of ['athletes','games','pitches']){
+      for(const row of rows[coll]){
+        try{ await write(coll, row.id, row); written++; }
+        catch(e){ failed++; }
+      }
+    }
+  }finally{
+    allIds.forEach(id=>inflight.delete(id));
+  }
+
+  return {
+    athletes: plan.newAthletes.length,
+    merged: plan.mergedAthletes.length,
+    games: plan.newGames.length,
+    pitches: plan.newPitches.length,
+    skippedGames: plan.skippedGames.length,
+    skippedPitches: plan.skippedPitches.length,
+    remapped: Object.keys(remap).length,
+    written, failed,
+  };
+}
+
+/* ---------- the panel ---------- */
+function importPanel(){
+  const imp = S.imp || (S.imp = {text:'', parsed:null, opts:{matchByName:true}, result:null, busy:false});
+
+  if(imp.result){
+    const r = imp.result;
+    return `<div class="panel">
+      <header><h3>Import finished</h3></header>
+      <div class="stats" style="margin-bottom:12px">
+        <div class="stat"><span class="k">Hitters added</span><span class="v">${r.athletes}</span></div>
+        <div class="stat"><span class="k">Games added</span><span class="v">${r.games}</span></div>
+        <div class="stat"><span class="k">Pitches added</span><span class="v">${r.pitches}</span></div>
+        ${r.merged?`<div class="stat"><span class="k">Hitters matched</span><span class="v">${r.merged}</span></div>`:''}
+        ${r.skippedGames?`<div class="stat"><span class="k">Games already here</span><span class="v">${r.skippedGames}</span></div>`:''}
+      </div>
+      ${r.failed?`<div class="warnbar"><b>${r.failed}</b> row${r.failed===1?'':'s'} could not reach the
+        database and are queued. They send automatically when the connection comes back --
+        keep this page open until the badge at the top says synced.</div>`
+       :`<p class="note" style="margin:0">Everything was saved. Check a hitter's page to confirm
+         their heat map looks right.</p>`}
+      <div class="row" style="margin-top:14px">
+        <button class="btn ghost" data-act="imp-reset">Import another file</button>
+        <button class="btn primary" data-act="tab" data-id="hitter">Go to Hitters</button>
+      </div>
+    </div>`;
+  }
+
+  const p = imp.parsed;
+  const plan = p && p.ok ? planImport(p, imp.opts) : null;
+
+  return `<div class="panel">
+    <header><h3>Import</h3>
+      <span class="sub">move a season from another copy of this app</span></header>
+    <p class="note" style="margin:0 0 12px;max-width:64ch">Choose a JSON file exported from any
+      copy of this tracker, or paste its contents. You will see exactly what is going to be added
+      before anything is written.</p>
+
+    <div class="row" style="margin-bottom:10px">
+      <input type="file" id="imp-file" accept=".json,application/json" data-act="imp-file">
+    </div>
+    <label class="field">
+      <span>Or paste the file contents</span>
+      <textarea id="imp-text" data-act="imp-text" rows="4" placeholder='{"exportedAt": "...", "athletes": [...], "games": [...], "pitches": [...]}'
+        style="width:100%;font-family:var(--f-mono);font-size:11.5px;background:var(--navy-900);
+        color:var(--slate-100);border:1px solid var(--navy-700);border-radius:4px;padding:9px;resize:vertical"
+        >${esc(imp.text)}</textarea>
+    </label>
+
+    <div class="row" style="margin-top:12px">
+      <button class="btn" data-act="imp-check"${imp.text.trim()?'':' disabled'}>Check the file</button>
+      ${imp.text.trim()?`<button class="btn ghost sm" data-act="imp-reset">Clear</button>`:''}
+    </div>
+
+    ${p && p.errors.length?`<div class="warnbar" style="margin-top:12px">
+      ${p.errors.map(e=>esc(e)).join('<br>')}</div>`:''}
+
+    ${plan?`
+      <div style="margin-top:16px;border-top:1px solid var(--navy-700);padding-top:14px">
+        <h4 style="margin-bottom:10px">What this will add</h4>
+        <div class="stats" style="margin-bottom:12px">
+          <div class="stat"><span class="k">New hitters</span><span class="v">${plan.newAthletes.length}</span></div>
+          <div class="stat"><span class="k">New games</span><span class="v">${plan.newGames.length}</span></div>
+          <div class="stat hero"><span class="k">New pitches</span><span class="v">${plan.newPitches.length}</span></div>
+          <div class="stat"><span class="k">Hitters matched ${help('A hitter in the file whose name already exists on your roster. Their games are attached to the hitter you already have instead of creating a duplicate.')}</span><span class="v">${plan.mergedAthletes.length}</span></div>
+          <div class="stat"><span class="k">Games skipped ${help('Games whose id is already in this copy. They are left exactly as they are -- an import never overwrites what you already have.')}</span><span class="v">${plan.skippedGames.length}</span></div>
+        </div>
+        <div class="row" style="margin-bottom:12px">
+          <div class="field"><span>Hitters with the same name</span>
+            <div class="seg">
+              <button data-act="imp-opt" data-k="matchByName" data-v="1" aria-pressed="${imp.opts.matchByName}">Treat as the same person</button>
+              <button data-act="imp-opt" data-k="matchByName" data-v="0" aria-pressed="${!imp.opts.matchByName}">Keep separate</button>
+            </div>
+          </div>
+        </div>
+        ${p.warnings.length?`<div class="warnbar" style="margin-bottom:12px">
+          <b>${p.warnings.length}</b> row${p.warnings.length===1?'':'s'} will be skipped:<br>
+          ${p.warnings.slice(0,5).map(x=>esc(x)).join('<br>')}
+          ${p.warnings.length>5?`<br>...and ${p.warnings.length-5} more`:''}</div>`:''}
+        ${plan.newPitches.length===0?`<div class="warnbar" style="margin-bottom:12px">
+          Nothing new to add -- every game in this file is already here.</div>`:''}
+        <div class="row">
+          <button class="btn primary" data-act="imp-apply"${plan.newPitches.length||plan.newAthletes.length||plan.newGames.length?'':' disabled'}>
+            ${imp.busy?'Importing...':'Import '+plan.newPitches.length+' pitches'}</button>
+          <span class="note">Existing data is never overwritten. Export first if you want a backup.</span>
+        </div>
+      </div>`:''}
+  </div>`;
+}
+</script>
+<script>
+/* ============================================================
+   ACTIONS -- every mutation in the app.
+   One delegated listener; no per-render handler wiring to leak.
+   ============================================================ */
+
+/* ---------- writing a pitch ---------- */
+async function commitPitch(decision, extra){
+  const g = game(S.liveGameId);
+  if(!g){ toast('No live game', true); return; }
+  const z = S.pending.zone, pt = S.pending.pt;
+  if(!z || !pt){ toast('Pick a zone and a pitch type first', true); return; }
+
+  const L = S.activeLineup;
+  const st = liveState(g);
+  const cur = st.per[L];
+  const slot = cur.batterIdx;
+  const athleteId = occupant(g, L, slot);
+  if(!athleteId){ toast('That lineup slot is empty -- use Sub to fill it', true); return; }
+
+  const paSeq = cur.open ? cur.open.paSeq : st.nextPA;
+  const c = cur.count;
+  const pitch = {
+    id: g.id+'-'+st.nextSeq,
+    gameId: g.id, seq: st.nextSeq, paSeq,
+    date: g.date, gameType: g.gameType,
+    lineup: L, slot, athleteId,
+    balls: c.balls, strikes: c.strikes,
+    zoneRow: z.r, zoneCol: z.c, inZone: inZone(z.r, z.c),
+    pitchType: pt, pitcherHand: S.hand || 'R',
+    decision,
+    result: extra?.result ?? null,
+    spray: extra?.spray ?? null,
+    ev: extra?.ev ?? null,
+    la: extra?.la ?? null,
+    dist: extra?.dist ?? null,
+    createdAt: Date.now(),
+  };
+
+  S.pitches.push(pitch);
+  S.pending = {zone:null, pt:null};
+  closeModal();
+  render();
+  await write('pitches', pitch.id, pitch);
+
+  // Announce the at-bat ending so the coach knows the order moved on.
+  const after = advanceCount(pitch);
+  if(decision==='in_play') toast(pitch.result+' -- next hitter');
+  else if(decision==='hbp') toast('HBP -- next hitter');
+  else if(after.balls>=4) toast('Walk -- next hitter');
+  else if(after.strikes>=3) toast('Strikeout -- next hitter');
+  render();
+}
+
+async function undoPitch(){
+  const g = game(S.liveGameId); if(!g) return;
+  const ps = gamePitches(g.id).slice().sort((a,b)=>a.seq-b.seq);
+  const last = ps[ps.length-1];
+  if(!last) return;
+  S.pitches = S.pitches.filter(p=>p.id!==last.id);
+  S.pending = {zone:null, pt:null};
+  render();
+  await remove('pitches', last.id);
+  toast('Removed pitch '+last.seq);
+  render();
+}
+
+/* ---------- games ---------- */
+async function startGame(){
+  const su = S.setup;
+  const lineup = [];
+  for(const L of (su.lineupMode==='dual' ? ['A','B'] : ['A'])){
+    su.lineups[L].forEach((id, slot)=>{
+      if(id) lineup.push({lineup:L, slot, athleteId:id, enteredAtPitchSeq:1});
+    });
+  }
+  const g = {
+    id: uid(), date: su.date || todayISO(), opponent: su.opponent.trim(),
+    gameType: su.gameType, lineupMode: su.lineupMode,
+    lineup,
+    status: 'live', createdAt: Date.now(),
+  };
+  S.games.push(g);
+  S.liveGameId = g.id;
+  S.activeLineup = 'A';
+  S.pending = {zone:null, pt:null};
+  S.setup = null;
+  render();
+  await write('games', g.id, g);
+  toast('Tracking '+(g.opponent||'game'));
+}
+
+async function endGame(){
+  const g = game(S.liveGameId) || game(S.reportGameId);
+  if(!g) return;
+  const open = liveState(g);
+  const incomplete = ['A','B'].filter(L=>open.per[L].open).length;
+  if(incomplete){
+    const go = await askConfirm({
+      title:'End the game?',
+      body:`There is an at-bat still in progress. Its pitches are already saved, but it
+            will show as incomplete and will not count as a plate appearance.`,
+      buttons:[{id:'cancel', label:'Keep tracking'},
+               {id:'end', label:'End game', cls:'danger'}],
+    });
+    if(go !== 'end') return;
+  }
+  g.status = 'final';
+  const id = g.id;
+  S.liveGameId = null;
+  S.tab = 'games';
+  S.reportGameId = id;
+  render();
+  await write('games', id, g);
+  toast('Game ended -- report ready');
+}
+
+async function saveGameLineups(g){ await write('games', g.id, g); }
+
+/* ---------- substitutions ----------
+   One append per change. Never rewrites history, so the pitches a hitter
+   already saw stay theirs and the slot's whole sequence survives in the
+   report and the export. */
+async function subIn(g, L, slot, athleteId){
+  const es = lineupEntries(g);
+  if(occupantOf(g, L, slot) === athleteId) return;          // nothing to do
+  const st = liveState(g);
+  es.push({lineup:L, slot, athleteId, enteredAtPitchSeq: st.nextSeq});
+  render();
+  drawModal();
+  await saveGameLineups(g);
+  render();
+  drawModal();
+  toast(athleteId ? aName(athleteId)+' in at '+(slot+1) : 'Slot '+(slot+1)+' cleared');
+}
+
+async function deleteGame(gid){
+  const g = game(gid);
+  if(!g) return;
+  const ps = gamePitches(gid);
+  const who = (g.opponent ? 'vs ' + g.opponent : 'the ' + g.gameType) + ' on ' + fmtDate(g.date);
+  const hitters = new Set(ps.map(p=>p.athleteId)).size;
+  const go = await askConfirm({
+    title:'Delete this game?',
+    body:`<p style="margin:0 0 10px"><b>${esc(who)}</b></p>
+      <p style="margin:0 0 10px"><b class="num">${ps.length}</b> pitch${ps.length===1?'':'es'} and
+        <b class="num">${derivePAs(ps).filter(p=>p.complete).length}</b> plate appearances will be
+        removed from <b class="num">${hitters}</b> hitter${hitters===1?'':'s'}' profiles.</p>
+      <p style="margin:0" class="note">This cannot be undone. Export from the Export tab first
+        if you want a copy.</p>`,
+    buttons:[{id:'cancel', label:'Cancel'},
+             {id:'delete', label:'Delete game', cls:'danger'}],
+  });
+  if(go !== 'delete') return;
+
+  S.pitches = S.pitches.filter(p=>p.gameId!==gid);
+  S.games   = S.games.filter(x=>x.id!==gid);
+  if(S.liveGameId===gid) S.liveGameId = null;
+  if(S.reportGameId===gid) S.reportGameId = null;
+  render();
+  // Tombstoned first so no in-flight snapshot can put any of them back, then
+  // removed together rather than one blocking round trip at a time.
+  await Promise.all(ps.map(p=>remove('pitches', p.id)));
+  await remove('games', gid);
+  S.pitches = S.pitches.filter(p=>p.gameId!==gid);
+  S.games   = S.games.filter(x=>x.id!==gid);
+  persistCache();
+  toast('Deleted ' + who);
+  render();
+}
+
+/* ---------- deleting a hitter ----------
+   A hitter who has seen pitches is a decision, not a click: benching keeps
+   every number and only hides them from new lineups, which is what a coach
+   usually wants. Deleting is offered plainly, with the cost stated. */
+async function deleteAthlete(id){
+  const a = athlete(id);
+  if(!a) return;
+  const theirs = S.pitches.filter(p=>p.athleteId===id);
+  const pas = derivePAs(S.pitches).filter(pa=>pa.complete && pa.athleteId===id).length;
+  const inLineups = S.games.filter(g=>lineupEntries(g).some(e=>e.athleteId===id));
+
+  const buttons = [{id:'cancel', label:'Cancel'}];
+  let body;
+  if(!theirs.length){
+    body = `<p style="margin:0 0 10px">Remove <b>${esc(a.name)}</b> from the roster?</p>
+      <p style="margin:0" class="note">They have no pitches logged, so nothing else is affected.</p>`;
+    buttons.push({id:'delete', label:'Remove hitter', cls:'danger'});
+  }else{
+    body = `<p style="margin:0 0 10px"><b>${esc(a.name)}</b> has
+        <b class="num">${theirs.length}</b> pitch${theirs.length===1?'':'es'} and
+        <b class="num">${pas}</b> plate appearance${pas===1?'':'s'} logged across
+        <b class="num">${new Set(theirs.map(p=>p.gameId)).size}</b> game${new Set(theirs.map(p=>p.gameId)).size===1?'':'s'}.</p>
+      <p style="margin:0 0 10px"><b>Bench</b> keeps all of it and only hides them from new lineups.
+        That is almost always what you want for a player who has left the program.</p>
+      <p style="margin:0" class="note">Deleting also destroys those pitches. Team and game
+        numbers will change. This cannot be undone.</p>`;
+    buttons.push({id:'bench', label:a.active===false?'Keep benched':'Bench instead'});
+    buttons.push({id:'delete', label:'Delete everything', cls:'danger'});
+  }
+
+  const go = await askConfirm({title:'Delete hitter?', body, buttons});
+  if(go === 'bench'){
+    a.active = false;
+    render();
+    await write('athletes', a.id, a);
+    toast(a.name+' benched -- data kept');
+    return;
+  }
+  if(go !== 'delete') return;
+
+  // Drop their lineup entries so reports never show a hitter who is gone.
+  for(const g of inLineups){
+    g.lineup = lineupEntries(g).filter(e=>e.athleteId!==id);
+  }
+  S.pitches = S.pitches.filter(p=>p.athleteId!==id);
+  S.athletes = S.athletes.filter(x=>x.id!==id);
+  if(S.athleteId===id) S.athleteId = null;
+  render();
+  await Promise.all(theirs.map(p=>remove('pitches', p.id)));
+  await Promise.all(inLineups.map(g=>write('games', g.id, g)));
+  await remove('athletes', id);
+  S.pitches = S.pitches.filter(p=>p.athleteId!==id);
+  S.athletes = S.athletes.filter(x=>x.id!==id);
+  persistCache();
+  toast(a.name+' deleted');
+  render();
+}
+
+/* ---------- per-hitter report text ----------
+   Plain text on purpose: it has to survive every mail client, and a coach
+   should be able to read it on a phone without pinching. */
+function reportText(gid, athleteId){
+  const g = game(gid);
+  const list = gamePitches(gid).filter(p=>p.athleteId===athleteId).sort((a,b)=>a.seq-b.seq);
+  const s = withOPS(computeStats(list, athleteId));
+  const pas = derivePAs(list).filter(pa=>pa.athleteId===athleteId);
+  const oz = list.filter(p=>!p.inZone);
+  const chases = oz.filter(p=>p.decision!=='taken' && p.decision!=='hbp');
+  const iz = list.filter(p=>p.inZone);
+  const ztakes = iz.filter(p=>p.decision==='taken');
+  const L = [];
+
+  L.push(`${aName(athleteId).toUpperCase()} -- ${g.gameType==='scrimmage'?'SCRIMMAGE':'GAME'} REPORT`);
+  L.push(`${fmtDate(g.date)}${g.opponent?' vs '+g.opponent:''}`);
+  L.push('');
+  L.push(`LINE     ${s.H}-${s.AB}${s.BB?', '+s.BB+' BB':''}${s.K?', '+s.K+' K':''}${s.HBP?', '+s.HBP+' HBP':''}`);
+  L.push(`PA ${s.PA}   AVG ${avg3(s.AVG)}   OBP ${avg3(s.OBP)}   SLG ${avg3(s.SLG)}   wOBA ${avg3(s.wOBA)}`);
+  if(s.xwOBA!=null) L.push(`xwOBA ${avg3(s.xwOBA)} (${s.bipTag} of ${s.bipTot} balls in play measured)`);
+  L.push('');
+  L.push('SWING DECISIONS');
+  L.push(`  Pitches seen        ${s.pitches}`);
+  L.push(`  In the zone         ${iz.length}   swung at ${iz.length-ztakes.length}, took ${ztakes.length}`);
+  L.push(`  Out of the zone     ${oz.length}   chased ${chases.length}`);
+  L.push(`  Chase rate          ${pct(s.Chase,0)}   (lower is better)`);
+  L.push(`  Swings at strikes   ${pct(s.ZSwing,0)}   (higher is better)`);
+  L.push(`  Whiff rate          ${pct(s.Whiff,0)}   of swings`);
+  L.push(`  Decision runs/100   ${sgn1(s.DecRuns)}`);
+  L.push('    Runs you gained or lost per 100 pitches by the swing-or-take call alone.');
+  L.push('    Taking a ball gains, taking a strike or chasing loses. Above zero is good.');
+  L.push('');
+  L.push('AT-BATS');
+  pas.forEach((pa,i)=>{
+    L.push(`  ${i+1}. ${pa.outcome||'in progress'}`);
+    pa.pitches.forEach((p,j)=>{
+      const a = advanceCount(p);
+      const z9 = zone9(p.zoneRow, p.zoneCol);
+      const where = z9 ? 'zone '+z9 : 'out of zone';
+      const bad = (!p.inZone && p.decision!=='taken' && p.decision!=='hbp') ? '   <- chase' : '';
+      const meas = p.ev!=null ? `   ${n1(p.ev)} mph${p.dist!=null?', '+p.dist+' ft':''}` : '';
+      L.push(`     ${p.balls}-${p.strikes}  ${PT_NAME[p.pitchType]||p.pitchType}, ${where}`
+        + `  -> ${decShort(p)}  (${a.balls}-${a.strikes})${meas}${bad}`);
+    });
+  });
+  const bipEV = list.filter(p=>p.decision==='in_play' && p.ev!=null);
+  if(bipEV.length){
+    L.push('');
+    L.push('CONTACT');
+    bipEV.forEach(p=>L.push(`  ${p.result}  ${n1(p.ev)} mph`
+      + `${p.la!=null?', '+n1(p.la)+' deg':''}${p.dist!=null?', '+p.dist+' ft':''}`
+      + `${xwobaFor(p.ev,p.la)!=null?'   expected value '+avg3(xwobaFor(p.ev,p.la)):''}`));
+  }
+  L.push('');
+  L.push('Mount Marty Baseball -- Hitter Tracker');
+  return L.join('\n');
+}
+
+function mailtoFor(gid, athleteId){
+  const g = game(gid), a = athlete(athleteId);
+  const subj = `${g.gameType==='scrimmage'?'Scrimmage':'Game'} report -- ${fmtDate(g.date)}`
+    + (g.opponent?` vs ${g.opponent}`:'');
+  return `mailto:${encodeURIComponent(a.email||'')}`
+    + `?subject=${encodeURIComponent(subj)}`
+    + `&body=${encodeURIComponent(reportText(gid, athleteId))}`;
+}
+
+/* ---------- roster ---------- */
+async function addAthlete(){
+  const name = $('#ra-name').value.trim();
+  if(!name){ toast('Give the hitter a name', true); return; }
+  const a = {
+    id: uid(), name,
+    number: $('#ra-num').value.trim(),
+    bats: $('#ra-bats').value,
+    classYear: $('#ra-class').value.trim(),
+    positions: $('#ra-pos').value.trim(),
+    email: $('#ra-email').value.trim(),
+    active: true, createdAt: Date.now(),
+  };
+  S.athletes.push(a);
+  render();
+  await write('athletes', a.id, a);
+  toast(name+' added');
+}
+
+/* ---------- export ---------- */
+const CSV_COLS = ['pitchId','gameId','date','gameType','opponent','lineup','slot','athleteId','athleteName',
+  'bats','paSeq','pitchSeq','balls','strikes','zoneRow','zoneCol','zone9','inZone','pitchType','pitcherHand',
+  'decision','result','sprayX','sprayY','exitVelo','launchAngle','distance','xwOBAcontact','decisionRunValue'];
+
+function buildCSV(){
+  const lines = [CSV_COLS.join(',')];
+  const q = v => {
+    if(v==null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  };
+  for(const p of S.pitches.slice().sort((a,b)=> (a.date||'').localeCompare(b.date||'') || a.seq-b.seq)){
+    const a = athlete(p.athleteId), g = game(p.gameId);
+    const x = p.decision==='in_play' ? xwobaFor(p.ev, p.la) : null;
+    lines.push([p.id, p.gameId, p.date, p.gameType, g?.opponent||'', p.lineup, p.slot+1, p.athleteId,
+      a?.name||'', a?.bats||'', p.paSeq, p.seq, p.balls, p.strikes, p.zoneRow, p.zoneCol,
+      zone9(p.zoneRow, p.zoneCol) ?? '', p.inZone?1:0, p.pitchType, p.pitcherHand, p.decision, p.result||'',
+      p.spray?p.spray.x.toFixed(4):'', p.spray?p.spray.y.toFixed(4):'',
+      p.ev??'', p.la??'', p.dist??'', x==null?'':x.toFixed(3), (pitchRV(p)??'')].map(q).join(','));
+  }
+  return lines.join('\n');
+}
+
+function buildJSON(){
+  return JSON.stringify({
+    exportedAt: new Date().toISOString(),
+    schemaVersion: 1,
+    lookupSource: LOOKUPS.source,
+    athletes: S.athletes, games: S.games, pitches: S.pitches,
+  }, null, 1);
+}
+
+async function download(filename, text, mime){
+  let dl = null;
+  try{ dl = (typeof claude!=='undefined' && claude.use) ? await claude.use('downloads') : null; }
+  catch(e){ dl = null; }
+  if(dl){
+    try{
+      await dl.save({filename, data:text});
+      toast('Saved '+filename);
+      return;
+    }catch(e){
+      if(e && e.code==='cancelled') return;
+      toast('Download declined or unavailable', true);
+      return;
+    }
+  }
+  // Outside claude.ai, a plain anchor works.
+  const url = URL.createObjectURL(new Blob([text], {type:mime}));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  toast('Saved '+filename);
+}
+
+/* ---------- field click -> normalized coords ---------- */
+function fieldPoint(svg, ev){
+  const r = svg.getBoundingClientRect();
+  const px = (ev.clientX - r.left) / r.width  * F.W;
+  const py = (ev.clientY - r.top)  / r.height * F.H;
+  return {
+    x: (px - F.cx) / (400*F.ppf),
+    y: (F.cy - py) / (400*F.ppf),
+  };
+}
+
+/* ============================================================
+   DELEGATED EVENTS
+   ============================================================ */
+document.addEventListener('click', async e=>{
+  const el = e.target.closest('[data-act]');
+  if(!el) return;
+  const act = el.dataset.act;
+  const d = el.dataset;
+
+  switch(act){
+    case 'tab': S.tab = d.id; S.reportGameId = null; render(); break;
+
+    /* ----- hosted deployment: connect and sign in ----- */
+    case 'sb-save': {
+      const url = ($('#sb-url')?.value || '').trim();
+      const key = ($('#sb-key')?.value || '').trim();
+      if(!/^https:\/\/.+/.test(url)){ S.gateError = 'The project URL should start with https://'; render(); break; }
+      // Supabase ships two generations of key names: the classic "anon public"
+      // JWT (eyJ...) and the newer "publishable" key (sb_publishable_...).
+      // Both are safe in a page and both work here. The secret one is neither.
+      if(/^sb_secret_/.test(key) || /service_role/.test(key)){
+        S.gateError = 'That is the secret / service_role key -- it bypasses every access rule. Use the anon public (or publishable) key instead.';
+        render(); break;
+      }
+      if(key.length < 30){ S.gateError = 'That key looks too short -- copy the whole thing.'; render(); break; }
+      try{ localStorage.setItem(SB_KEY, JSON.stringify({url, anonKey:key})); }
+      catch(err){ S.gateError = 'This browser is blocking storage, so the connection cannot be saved.'; render(); break; }
+      S.gateError = null;
+      S.gate = 'signin';
+      render();
+      break;
+    }
+    case 'sb-skip':
+      S.gate = null; S.gateError = null;
+      toast('Working on this device only -- nothing will sync');
+      render();
+      break;
+    case 'si-send': {
+      const cfg = sbConfig();
+      const email = ($('#si-email')?.value || '').trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ S.gateError = 'Enter a valid email address.'; render(); break; }
+      el.disabled = true;
+      try{
+        await sbSendLink(cfg.url, cfg.anonKey, email, siteRedirect());
+        S.signin = {email, sent:true};
+        S.gateError = null;
+      }catch(err){ S.gateError = String(err.message); }
+      render();
+      break;
+    }
+    case 'si-verify': {
+      const cfg = sbConfig();
+      const code = ($('#si-code')?.value || '').trim();
+      if(!code){ S.gateError = 'Enter the code from your email.'; render(); break; }
+      el.disabled = true;
+      try{
+        const session = await sbVerifyCode(cfg.url, cfg.anonKey, S.signin.email, code);
+        localStorage.setItem(SB_SESSION, JSON.stringify(session));
+        S.gateError = null;
+        S.signin = null;
+        if(await supabaseStore.init()){
+          store = supabaseStore;
+          S.gate = null;
+          await adoptRemote();
+          toast('Signed in');
+        }else{
+          localStorage.removeItem(SB_SESSION);
+          S.gateError = 'Signed in, but your email is not on the coaches list. Ask whoever set this up to add it.';
+        }
+      }catch(err){ S.gateError = String(err.message); }
+      render();
+      break;
+    }
+    case 'si-back': S.signin = {email:S.signin?.email||'', sent:false}; S.gateError = null; render(); break;
+    case 'sign-out':
+      try{ localStorage.removeItem(SB_SESSION); }catch(err){}
+      S.gate = 'signin'; S.signin = null; S.gateError = null;
+      render();
+      break;
+
+    /* ----- game setup ----- */
+    case 'setup-field':
+      if(d.v!=null && el.tagName==='BUTTON'){ S.setup[d.k] = d.v; render(); }
+      break;
+    case 'setup-move': {
+      const i = +d.i, dir = +d.d, L = d.l, arr = S.setup.lineups[L];
+      const j = i + dir;
+      if(j<0 || j>=arr.length) break;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      render();
+      break;
+    }
+    case 'start-game': await startGame(); break;
+
+    /* ----- tracking ----- */
+    case 'pick-zone':
+      S.pending.zone = {r:+d.r, c:+d.c};
+      render();
+      break;
+    case 'pick-pt':
+      S.pending.pt = d.v;
+      render();
+      break;
+    case 'set-hand': S.hand = d.v; render(); break;
+    case 'pick-dec':
+      if(d.v==='in_play'){ S.bip = {result:'', x:null, y:null, ev:'', la:'', dist:''}; openModal('bip'); }
+      else await commitPitch(d.v, null);
+      break;
+    case 'set-lineup': S.activeLineup = d.l; S.pending={zone:null,pt:null}; render(); break;
+    case 'undo': await undoPitch(); break;
+    case 'end-game': await endGame(); break;
+    case 'sub-open': S.subSide = S.activeLineup; openModal('sub'); break;
+    case 'sub-side': S.subSide = d.l; drawModal(); break;
+    case 'sub-add-new': {
+      const g = game(S.liveGameId);
+      if(!g){ toast('No live game', true); break; }
+      const name = ($('#sub-new-name')?.value || '').trim();
+      if(!name){ toast('Give the hitter a name', true); break; }
+      const slot = +($('#sub-new-slot')?.value || 0);
+      const a = {
+        id: uid(), name,
+        number: ($('#sub-new-num')?.value || '').trim(),
+        bats: $('#sub-new-bats')?.value || 'R',
+        classYear:'', positions:'', email:'', active:true, createdAt: Date.now(),
+      };
+      S.athletes.push(a);
+      await write('athletes', a.id, a);
+      await subIn(g, d.l || S.activeLineup, slot, a.id);
+      break;
+    }
+
+    /* ----- ball in play ----- */
+    case 'bip-res': S.bip.result = d.v; drawModal(); break;
+    case 'bip-save': {
+      const b = S.bip;
+      const num = v => { const n = parseFloat(v); return isFinite(n) ? n : null; };
+      await commitPitch('in_play', {
+        result: b.result,
+        spray: b.x!=null ? {x:+b.x.toFixed(4), y:+b.y.toFixed(4)} : null,
+        ev: num(b.ev), la: num(b.la), dist: num(b.dist),
+      });
+      break;
+    }
+    case 'field-click': {
+      const svg = el.closest('svg') || el;
+      if(!S.bip) break;
+      const p = fieldPoint(svg, e);
+      S.bip.x = p.x; S.bip.y = p.y;
+      drawModal();
+      break;
+    }
+    case 'modal-close': dismissModal(); render(); break;
+    case 'modal-backdrop': if(e.target===el){ dismissModal(); render(); } break;
+
+    /* ----- filters / pages ----- */
+    case 'filter': S.filters[d.k] = d.v; render(); break;
+    case 'filter-reset':
+      S.filters = {gameType:'game', count:'all', pt:'all', hand:'all', from:'', to:'', gameId:''};
+      render(); break;
+    case 'hm': S.hmMetric = d.v; render(); break;
+    case 'team-sort': S.teamSort = d.k; render(); break;
+    case 'goto-hitter': S.athleteId = d.id; S.tab = 'hitter'; render(); break;
+    case 'open-report': S.reportGameId = d.id; S.tab = 'games'; render(); break;
+    case 'close-report': S.reportGameId = null; render(); break;
+
+    /* ----- roster ----- */
+    case 'add-athlete': await addAthlete(); break;
+    case 'delete-game': await deleteGame(d.id); break;
+    case 'delete-athlete': await deleteAthlete(d.id); break;
+    case 'confirm-pick': resolveConfirm(d.v==='cancel' ? false : d.v); break;
+
+    /* ----- report delivery ----- */
+    case 'mail-one': {
+      window.location.href = mailtoFor(d.gid, d.id);
+      break;
+    }
+    case 'mail-all': {
+      const g = game(d.gid);
+      const ids = [...new Set(gamePitches(d.gid).map(p=>p.athleteId))]
+        .filter(id=>athlete(id)?.email);
+      if(!ids.length){ toast('No hitters in this game have an email on the roster', true); return; }
+      // One window per hitter: the body is different for each, so there is no
+      // single message that can carry all nine.
+      ids.forEach((id,i)=> setTimeout(()=>window.open(mailtoFor(d.gid,id),'_blank'), i*450));
+      toast('Opening '+ids.length+' draft'+(ids.length>1?'s':''));
+      break;
+    }
+    case 'copy-report': {
+      const txt = reportText(d.gid, d.id);
+      try{
+        await navigator.clipboard.writeText(txt);
+        toast('Report copied');
+      }catch(err){
+        S.showReport = {gid:d.gid, id:d.id};
+        openModal('report');
+      }
+      break;
+    }
+    case 'show-report': S.showReport = {gid:d.gid, id:d.id}; openModal('report'); break;
+    case 'toggle-active': {
+      const a = athlete(d.id);
+      a.active = a.active===false;
+      render();
+      await write('athletes', a.id, a);
+      break;
+    }
+
+    /* ----- export ----- */
+    /* ----- import ----- */
+    case 'imp-check':
+      S.imp.parsed = parseImport(S.imp.text);
+      render();
+      break;
+    case 'imp-opt':
+      S.imp.opts[d.k] = d.v === '1';
+      render();
+      break;
+    case 'imp-reset':
+      S.imp = {text:'', parsed:null, opts:{matchByName:true}, result:null, busy:false};
+      render();
+      break;
+    case 'imp-apply': {
+      const imp = S.imp;
+      if(!imp.parsed || !imp.parsed.ok || imp.busy) break;
+      imp.busy = true;
+      render();
+      imp.result = await applyImport(imp.parsed, imp.opts);
+      imp.busy = false;
+      render();
+      toast('Imported '+imp.result.pitches+' pitches');
+      break;
+    }
+
+    case 'export-csv':
+      await download('mmb-pitches-'+todayISO()+'.csv', buildCSV(), 'text/csv');
+      break;
+    case 'export-json':
+      await download('mmb-tracker-'+todayISO()+'.json', buildJSON(), 'application/json');
+      break;
+  }
+});
+
+/* change events: selects and number inputs */
+document.addEventListener('change', async e=>{
+  const el = e.target.closest('[data-act]');
+  if(!el) return;
+  const d = el.dataset;
+  switch(d.act){
+    case 'setup-slot': S.setup.lineups[d.l][+d.i] = el.value; render(); break;
+    case 'setup-field': S.setup[d.k] = el.value; break;
+    case 'pick-athlete': S.athleteId = el.value; render(); break;
+    case 'athlete-email': {
+      const a = athlete(d.id); if(!a) break;
+      const v = el.value.trim();
+      if(v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+        toast('That does not look like an email address', true);
+        el.value = a.email || '';
+        break;
+      }
+      a.email = v;
+      await write('athletes', a.id, a);
+      toast(v ? 'Email saved for '+a.name : 'Email cleared');
+      break;
+    }
+    case 'filter-sel': S.filters[d.k] = el.value; render(); break;
+    case 'filter-inp': S.filters[d.k] = el.value; render(); break;
+    case 'imp-file': {
+      const file = el.files && el.files[0];
+      if(!file) break;
+      try{
+        S.imp.text = await file.text();
+        S.imp.parsed = parseImport(S.imp.text);
+      }catch(err){
+        S.imp.parsed = {ok:false, errors:['Could not read that file: '+err.message], warnings:[]};
+      }
+      render();
+      break;
+    }
+    case 'sub-pick': {
+      const g = game(S.liveGameId);
+      if(!g){ toast('No live game to substitute in', true); break; }
+      const L = d.l || S.subSide || S.activeLineup, i = +d.i;
+      await subIn(g, L, i, el.value || null);
+      break;
+    }
+  }
+});
+
+/* live-typing fields that must not force a re-render mid-keystroke */
+document.addEventListener('input', e=>{
+  const el = e.target.closest('[data-act]');
+  if(!el) return;
+  const d = el.dataset;
+  if(d.act==='setup-field'){ S.setup[d.k] = el.value; return; }
+  if(d.act==='imp-text'){
+    S.imp.text = el.value;
+    // Enable the Check button without re-rendering the textarea under the caret.
+    const btn = document.querySelector('#view button[data-act="imp-check"]');
+    if(btn) btn.disabled = !el.value.trim();
+    return;
+  }
+  if(d.act==='bip-num' && S.bip){
+    S.bip[d.k] = el.value;
+    // Refresh only the expected-wOBA readout, so focus and caret survive.
+    if(d.k==='ev' || d.k==='la'){
+      const ev = parseFloat(S.bip.ev), la = parseFloat(S.bip.la);
+      const x = isFinite(ev) ? xwobaFor(ev, isFinite(la)?la:null) : null;
+      const out = document.querySelector('#bip-xw');
+      if(out) out.textContent = x==null ? '--' : x.toFixed(3).replace(/^0/,'');
+    }
+  }
+});
+
+/* keyboard shortcuts for the tracking screen -- a coach keeping up with a game */
+document.addEventListener('keydown', e=>{
+  if(S.tab!=='live' || !S.liveGameId || S.modal) return;
+  if(e.target.matches('input,select,textarea')) return;
+  const k = e.key.toLowerCase();
+  const map = {b:'taken', w:'swing_miss', f:'foul', h:'hbp'};
+  if(k==='z'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); undoPitch(); return; }
+  if(map[k] && S.pending.zone && S.pending.pt){ e.preventDefault(); commitPitch(map[k], null); }
+  if(k==='i' && S.pending.zone && S.pending.pt){
+    e.preventDefault();
+    S.bip = {result:'', x:null, y:null, ev:'', la:'', dist:''};
+    openModal('bip');
+  }
+});
+
+boot();
+</script>
