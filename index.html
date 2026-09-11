@@ -381,6 +381,15 @@ function fmtDate(iso){
   return new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 function help(tip){ return `<span class="hq" tabindex="0" role="note" data-tip="${esc(tip)}">?</span>`; }
+
+/* Deliberately written with no backslash escapes. An earlier version used
+   \s and \. and lost its backslashes on the way into the build, leaving a
+   class that excluded the letter "s" -- which quietly rejected the address of
+   anyone whose email contained one. Character classes and [.] cannot be
+   mangled the same way. */
+function looksLikeEmail(v){
+  return /^[^ @]+@[^ @]+[.][^ @]+$/.test(String(v || '').trim());
+}
 function toast(msg,bad){
   const el = document.createElement('div');
   el.textContent = msg;
@@ -3069,7 +3078,7 @@ document.addEventListener('click', async e=>{
       const cfg = sbConfig();
       const email = ($('#si-email')?.value || '').trim();
       const pass  = $('#si-pass')?.value || '';
-      if(!/^[^s@]+@[^s@]+.[^s@]+$/.test(email)){ S.gateError = 'Enter a valid email address.'; render(); break; }
+      if(!looksLikeEmail(email)){ S.gateError = 'Enter a valid email address.'; render(); break; }
       if(pass.length < 8){ S.gateError = 'Use a password of at least 8 characters.'; render(); break; }
       el.disabled = true;
       el.textContent = d.mode==='signup' ? 'Creating...' : 'Signing in...';
@@ -3274,7 +3283,7 @@ document.addEventListener('change', async e=>{
     case 'athlete-email': {
       const a = athlete(d.id); if(!a) break;
       const v = el.value.trim();
-      if(v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+      if(v && !looksLikeEmail(v)){
         toast('That does not look like an email address', true);
         el.value = a.email || '';
         break;
